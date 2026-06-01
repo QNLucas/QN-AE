@@ -380,10 +380,10 @@ function renderTrimestrielle(data, persons) {
   persons.forEach(p => {
     byPQ[p] = {};
     qs.forEach(q => {
-      const signed = allSig.filter(d=>d.person===p&&QUARTERS[q].includes(d.moisSig)).reduce((s,d)=>s+d.recurrent,0);
-      const obj    = OBJECTIVES[p]?.[q] || 0;
-      const pct    = obj > 0 ? Math.round(signed/obj*100) : null;
-      byPQ[p][q]   = { signed, obj, pct };
+      const facture = allSig.filter(d=>d.person===p&&QUARTERS[q].includes(d.moisFact)).reduce((s,d)=>s+d.recurrent,0);
+      const obj     = OBJECTIVES[p]?.[q] || 0;
+      const pct     = obj > 0 ? Math.round(facture/obj*100) : null;
+      byPQ[p][q]    = { facture, obj, pct };
     });
   });
 
@@ -394,23 +394,23 @@ function renderTrimestrielle(data, persons) {
     <div class="kpi-grid">
       ${qs.map((q,i)=>`
         <div class="kpi-card ${['blue','green','yellow','coral'][i]}">
-          <div class="kpi-label">${q} — Récurrent Signé</div>
-          <div class="kpi-value">${fmt(qSigne[q])}</div>
-          <div class="kpi-sub">Facturé : ${fmt(qFact[q])}</div>
+          <div class="kpi-label">${q} — Récurrent Facturé</div>
+          <div class="kpi-value">${fmt(qFact[q])}</div>
+          <div class="kpi-sub">Signé : ${fmt(qSigne[q])}</div>
         </div>`).join('')}
     </div>
 
-    <div class="section-title">Signé vs Objectif par commercial</div>
+    <div class="section-title">Facturé vs Objectif par commercial</div>
     <div class="chart-card">
       <div class="chart-wrap" style="height:270px"><canvas id="cQBar"></canvas></div>
     </div>
 
-    <div class="section-title">Atteinte des objectifs</div>
+    <div class="section-title">Atteinte des objectifs (base facturé)</div>
     <div class="table-card">
       <table>
         <thead><tr>
           <th>Commercial</th>
-          ${qs.map(q=>`<th>${q} Signé</th><th>${q} Obj.</th><th>${q} %</th>`).join('')}
+          ${qs.map(q=>`<th>${q} Facturé</th><th>${q} Obj.</th><th>${q} %</th>`).join('')}
         </tr></thead>
         <tbody>
           ${persons.map(p=>`<tr>
@@ -421,7 +421,7 @@ function renderTrimestrielle(data, persons) {
             ${qs.map(q=>{
               const d=byPQ[p][q];
               const cls=d.pct===null?'grey':d.pct>=100?'green':d.pct>=70?'yellow':'red';
-              return `<td>${fmt(d.signed)}</td>
+              return `<td>${fmt(d.facture)}</td>
                 <td>${d.obj?fmt(d.obj):'<span style="color:var(--grey-text)">—</span>'}</td>
                 <td>${d.pct!==null?`<span class="badge ${cls}">${d.pct}%</span>`:'<span style="color:var(--grey-text)">—</span>'}</td>`;
             }).join('')}
@@ -438,8 +438,8 @@ function renderTrimestrielle(data, persons) {
       labels: persons,
       datasets:[
         ...activeQ.map(q=>({
-          label:`${q} Signé`,
-          data: persons.map(p=>byPQ[p][q].signed),
+          label:`${q} Facturé`,
+          data: persons.map(p=>byPQ[p][q].facture),
           backgroundColor: qColors[qs.indexOf(q)]+'BB',
           borderRadius:4,
         })),
