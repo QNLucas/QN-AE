@@ -137,21 +137,20 @@ const OBJECTIVES = {
   Baptiste: { Q1: 0,     Q2: 60000,  Q3: 60000,   Q4: 80000 },
 };
 
-// Squads : Caroline = manager de sa squad, Antoine = manager à partir de Q3
-const SQUADS = {
-  Caroline: {
-    label: 'Squad Caroline',
-    members: ['Caroline', 'Arthur'],
-    allQuarters: true,
-    color: '#F47B6E'
-  },
-  Antoine: {
-    label: 'Squad Antoine',
-    members: ['Antoine', 'Baptiste'],
-    fromQ3: true,       // visible à partir de Q3
-    color: '#2B4EE6'
-  }
+// Squads :
+// Q1 & Q2 : 1 seule squad "Caroline" → Caroline, Antoine, Arthur, Baptiste (Lucas = Head of Sales, hors squad)
+// Q3 & Q4 : 2 squads → "Squad Caroline" (Caroline, Arthur, Baptiste) + "Squad Antoine" (Antoine)
+const SQUADS_BY_HALF = {
+  H1: [
+    { key:'Caroline', label:'Squad Caroline', members:['Caroline','Antoine','Arthur','Baptiste'], color:'#F47B6E' }
+  ],
+  H2: [
+    { key:'Caroline', label:'Squad Caroline', members:['Caroline','Arthur','Baptiste'], color:'#F47B6E' },
+    { key:'Antoine',  label:'Squad Antoine',  members:['Antoine'],                      color:'#2B4EE6' }
+  ]
 };
+// HEAD_OF_SALES : jamais dans une squad
+const HEAD_OF_SALES = ['Lucas'];
 
 const MONTHS_ORDER = [
   'janv. 2026','févr. 2026','mars 2026','avr. 2026','mai 2026','juin 2026',
@@ -336,39 +335,56 @@ function chartOpts(stacked) {
 // ────────────────────────────────────────────────────────────────
 // Helpers squads
 // ────────────────────────────────────────────────────────────────
-function getSquadForQuarter(q) {
-  // Q1, Q2 → seulement squad Caroline ; Q3, Q4 → les deux
-  const squads = [];
-  for (const [key, sq] of Object.entries(SQUADS)) {
-    if (sq.allQuarters) squads.push({key, ...sq});
-    else if (sq.fromQ3 && (q==='Q3'||q==='Q4')) squads.push({key, ...sq});
-  }
-  return squads;
+function getSquadsForQuarter(q) {
+  return (q==='Q1'||q==='Q2') ? SQUADS_BY_HALF.H1 : SQUADS_BY_HALF.H2;
 }
 
-function squadRowsHTML(persons, dataFn) {
-  // dataFn(person) → {nb, signe, recSigne, facture}
-  // Génère les lignes groupées par squad
-  const qs = ['Q1','Q2','Q3','Q4'];
-  // On utilise Q4 pour avoir toutes squads
-  const allSquads = Object.entries(SQUADS);
+// Génère des lignes de tableau groupées par squad (vue tableau globale = on utilise H2 pour montrer toutes les squads,
+// avec mention de l'évolution pour les membres qui changent)
+function squadRowsHTML(persons, dataFn, colspan) {
+  const cols = colspan || 5;
   const html = [];
   const done = new Set();
-  allSquads.forEach(([key, sq]) => {
+
+  // Section H1 (Q1-Q2) : 1 seule squad avec tous
+  const sq1 = SQUADS_BY_HALF.H1[0];
+  const membersH1 = sq1.members.filter(p => persons.includes(p));
+  if (membersH1.length) {
+    html.push(`<tr style="background:linear-gradient(90deg,${sq1.color}18,${sq1.color}06)">
+      <td colspan="${cols}" style="padding:6px 11px;font-size:11px;font-weight:700;color:${sq1.color};letter-spacing:0.3px">
+        🏷 ${sq1.label} — Q1 &amp; Q2
+      </td></tr>`);
+    membersH1.forEach(p => { html.push(dataFn(p)); done.add(p); });
+  }
+
+  // Séparateur H2
+  html.push(`<tr style="background:#0F206008">
+    <td colspan="${cols}" style="padding:5px 11px;font-size:10px;font-weight:600;color:var(--grey-text);letter-spacing:0.4px;text-transform:uppercase">
+      ↓ Réorganisation Q3 &amp; Q4
+    </td></tr>`);
+
+  // Section H2 : squads séparées
+  SQUADS_BY_HALF.H2.forEach(sq => {
     const members = sq.members.filter(p => persons.includes(p));
     if (!members.length) return;
     html.push(`<tr style="background:linear-gradient(90deg,${sq.color}18,${sq.color}06)">
-      <td colspan="5" style="padding:6px 11px;font-size:11px;font-weight:700;color:${sq.color};letter-spacing:0.3px">
-        🏷 ${sq.label}${sq.fromQ3 ? ' <span style="font-weight:400;opacity:0.7">(dès Q3)</span>' : ''}
+      <td colspan="${cols}" style="padding:6px 11px;font-size:11px;font-weight:700;color:${sq.color};letter-spacing:0.3px">
+        🏷 ${sq.label} — Q3 &amp; Q4
       </td></tr>`);
-    members.forEach(p => {
-      const d = dataFn(p);
-      html.push(d);
-      done.add(p);
-    });
+    members.forEach(p => { html.push(dataFn(p)); });
   });
-  // Restants sans squad
-  persons.filter(p => !done.has(p)).forEach(p => html.push(dataFn(p)));
+
+  // Lucas et autres Head of Sales ou non-squad
+  persons.filter(p => HEAD_OF_SALES.includes(p)).forEach(p => {
+    if (!done.has(p)) {
+      html.push(`<tr style="background:#9B59B618">
+        <td colspan="${cols}" style="padding:6px 11px;font-size:11px;font-weight:700;color:#9B59B6;letter-spacing:0.3px">
+          👑 Head of Sales
+        </td></tr>`);
+      html.push(dataFn(p));
+    }
+  });
+
   return html.join('');
 }
 
@@ -460,17 +476,17 @@ function renderMensuelle(data, persons) {
 
     <div class="section-title">Squads</div>
 
-    <!-- Squad Caroline -->
+    <!-- Squad Caroline (toute l'année : Caroline, Arthur, Baptiste) -->
     <div class="squad-section">
       <div class="squad-header squad-caroline">
         <span style="font-size:18px">🏷</span>
         <div>
           <div class="squad-label" style="color:#b03020">Squad Caroline</div>
-          <div class="squad-sub">Caroline · Arthur — actifs toute l'année</div>
+          <div class="squad-sub">Q1–Q2 : Caroline · Antoine · Arthur · Baptiste &nbsp;|&nbsp; Q3–Q4 : Caroline · Arthur · Baptiste</div>
         </div>
       </div>
       <div class="charts-grid">
-        ${['Caroline','Arthur'].filter(p=>persons.includes(p)).map(p=>`
+        ${['Caroline','Arthur','Baptiste'].filter(p=>persons.includes(p)).map(p=>`
         <div class="chart-card">
           <h3 style="color:${COLORS[p]}">${p} — Récurrent signé / mois</h3>
           <div class="chart-wrap"><canvas id="cSquad_${p}"></canvas></div>
@@ -478,17 +494,17 @@ function renderMensuelle(data, persons) {
       </div>
     </div>
 
-    <!-- Squad Antoine (dès Q3) -->
+    <!-- Squad Antoine (dès Q3 — Antoine seul, ex-membre squad Caroline) -->
     <div class="squad-section">
       <div class="squad-header squad-antoine">
         <span style="font-size:18px">🏷</span>
         <div>
           <div class="squad-label" style="color:#1A3599">Squad Antoine</div>
-          <div class="squad-sub">Antoine · Baptiste — actifs dès Q3 (juil. 2026)</div>
+          <div class="squad-sub">Q1–Q2 : dans Squad Caroline &nbsp;|&nbsp; Q3–Q4 : lead de sa propre squad</div>
         </div>
       </div>
       <div class="charts-grid">
-        ${['Antoine','Baptiste'].filter(p=>persons.includes(p)).map(p=>`
+        ${['Antoine'].filter(p=>persons.includes(p)).map(p=>`
         <div class="chart-card">
           <h3 style="color:${COLORS[p]}">${p} — Récurrent signé / mois</h3>
           <div class="chart-wrap"><canvas id="cSquad_${p}"></canvas></div>
@@ -543,7 +559,7 @@ function renderMensuelle(data, persons) {
   });
 
   // Mini-graphes par personne
-  ['Caroline','Arthur','Antoine','Baptiste'].forEach(p => {
+  ['Caroline','Arthur','Baptiste','Antoine'].forEach(p => {
     const el = document.getElementById('cSquad_'+p);
     if (!el || !persons.includes(p)) return;
     charts['sq_'+p] = new Chart(el.getContext('2d'), {
@@ -647,7 +663,7 @@ function renderTrimestrielle(data, persons) {
           <span style="font-size:16px">🏷</span>
           <div>
             <div class="squad-label" style="color:#b03020;font-size:12px">Squad Caroline</div>
-            <div class="squad-sub">Caroline · Arthur</div>
+            <div class="squad-sub">Q1–Q2 : + Antoine &nbsp;|&nbsp; Q3–Q4 : Caroline · Arthur · Baptiste</div>
           </div>
         </div>
         <div class="chart-wrap"><canvas id="cSquadCaroline"></canvas></div>
@@ -657,7 +673,7 @@ function renderTrimestrielle(data, persons) {
           <span style="font-size:16px">🏷</span>
           <div>
             <div class="squad-label" style="color:#1A3599;font-size:12px">Squad Antoine (dès Q3)</div>
-            <div class="squad-sub">Antoine · Baptiste</div>
+            <div class="squad-sub">Q1–Q2 : dans Squad Caroline &nbsp;|&nbsp; Q3–Q4 : lead indépendant</div>
           </div>
         </div>
         <div class="chart-wrap"><canvas id="cSquadAntoine"></canvas></div>
@@ -676,7 +692,7 @@ function renderTrimestrielle(data, persons) {
             ${qs.map(()=>`<th>Facturé</th><th>Objectif</th><th>Atteinte</th>`).join('')}
           </tr>
         </thead>
-        <tbody>${squadRowsHTML(persons, rowFnTrim)}</tbody>
+        <tbody>${squadRowsHTML(persons, rowFnTrim, 13)}</tbody>
       </table>
     </div>`;
 
@@ -737,8 +753,8 @@ function renderTrimestrielle(data, persons) {
       options: chartOpts(false)
     });
   }
-  squadChart('cSquadCaroline',['Caroline','Arthur'],'Squad Caroline');
-  squadChart('cSquadAntoine',['Antoine','Baptiste'],'Squad Antoine');
+  squadChart('cSquadCaroline',['Caroline','Arthur','Baptiste'],'Squad Caroline');
+  squadChart('cSquadAntoine',['Antoine'],'Squad Antoine');
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -822,7 +838,7 @@ function renderAnnuelle(data, persons) {
         <div class="squad-header squad-caroline" style="margin-bottom:10px">
           <span style="font-size:16px">🏷</span>
           <div><div class="squad-label" style="color:#b03020;font-size:12px">Squad Caroline</div>
-          <div class="squad-sub">Caroline · Arthur — toute l'année</div></div>
+          <div class="squad-sub">Caroline · Arthur · Baptiste — toute l'année (+ Antoine en Q1–Q2)</div></div>
         </div>
         <div class="chart-wrap"><canvas id="cSquadAnnCaroline"></canvas></div>
       </div>
@@ -830,7 +846,7 @@ function renderAnnuelle(data, persons) {
         <div class="squad-header squad-antoine" style="margin-bottom:10px">
           <span style="font-size:16px">🏷</span>
           <div><div class="squad-label" style="color:#1A3599;font-size:12px">Squad Antoine</div>
-          <div class="squad-sub">Antoine · Baptiste — actifs dès Q3</div></div>
+          <div class="squad-sub">Q1–Q2 : dans Squad Caroline &nbsp;|&nbsp; Q3–Q4 : lead indépendant</div></div>
         </div>
         <div class="chart-wrap"><canvas id="cSquadAnnAntoine"></canvas></div>
       </div>
@@ -860,14 +876,14 @@ function renderAnnuelle(data, persons) {
                 <strong>${p}</strong>
               </span></td>
               ${qs.map(q=>`
-                <td${qs.indexOf(q)<2&&['Antoine','Baptiste'].includes(p)?' style="opacity:0.4"':''}>${fmt(d.qData[q].facture)}</td>
+                <td>${fmt(d.qData[q].facture)}</td>
                 <td>${d.qData[q].obj?fmt(d.qData[q].obj):'—'}</td>
               `).join('')}
               <td><strong>${fmt(d.facture)}</strong></td>
               <td>${d.obj?fmt(d.obj):'—'}</td>
               <td>${d.pct!==null?`<span class="badge ${cls}">${d.pct}%</span>`:'—'}</td>
             </tr>`;
-          })}
+          }, 11)}
           <tr style="background:#0F206010;font-weight:700">
             <td><strong>TOTAL</strong></td>
             ${qs.map(q=>{
@@ -969,8 +985,8 @@ function renderAnnuelle(data, persons) {
       options: chartOpts(false)
     });
   }
-  squadAnnChart('cSquadAnnCaroline',['Caroline','Arthur']);
-  squadAnnChart('cSquadAnnAntoine',['Antoine','Baptiste']);
+  squadAnnChart('cSquadAnnCaroline',['Caroline','Arthur','Baptiste']);
+  squadAnnChart('cSquadAnnAntoine',['Antoine']);
 }
 
 // ────────────────────────────────────────────────────────────────
