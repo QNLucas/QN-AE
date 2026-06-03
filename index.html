@@ -9,8 +9,10 @@
 <style>
   :root {
     --blue:#2B4EE6;--blue-dark:#1A3599;--blue-light:#3D6BF5;--navy:#0F2060;
-    --yellow:#F5A623;--coral:#F47B6E;--green:#5BC98A;
+    --yellow:#F5A623;--coral:#F47B6E;--green:#5BC98A;--purple:#7C3AED;
     --white:#FFFFFF;--cream:#FDF6EF;--grey-light:#E8EDF5;--grey-text:#6B7A99;--text-dark:#1A2340;
+    /* Couleurs bilan trimestriel (distinctes des commerciaux) */
+    --q1:#7C3AED;--q2:#0891B2;--q3:#059669;--q4:#DC2626;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text-dark);min-height:100vh;}
@@ -23,13 +25,15 @@
   .last-update{font-size:12px;color:rgba(255,255,255,0.6);text-align:right;cursor:pointer;}
   .last-update:hover{color:white;}
 
-  .filters{background:white;padding:12px 32px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 2px 12px rgba(43,78,230,0.08);position:sticky;top:0;z-index:10;}
+  .filters{background:white;padding:10px 32px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 2px 12px rgba(43,78,230,0.08);position:sticky;top:0;z-index:10;}
   .filter-label{font-size:11px;font-weight:600;color:var(--grey-text);white-space:nowrap;}
   .filter-btn{padding:5px 13px;border-radius:999px;border:2px solid var(--grey-light);background:white;color:var(--text-dark);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;}
   .filter-btn.active{background:var(--blue);color:white;border-color:var(--blue);}
   .divider{width:1px;height:20px;background:var(--grey-light);flex-shrink:0;}
+  .select-all-btn{padding:4px 10px;border-radius:999px;border:1.5px dashed var(--grey-text);background:white;color:var(--grey-text);font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s;}
+  .select-all-btn:hover{border-color:var(--blue);color:var(--blue);}
 
-  .main{padding:22px 32px;max-width:1400px;margin:0 auto;}
+  .main{padding:22px 32px;max-width:1500px;margin:0 auto;}
   .section-title{font-size:15px;font-weight:700;color:var(--navy);margin:22px 0 12px;display:flex;align-items:center;gap:8px;}
   .pill{font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--blue);color:white;}
 
@@ -39,20 +43,26 @@
   .kpi-card.yellow{background:var(--yellow);color:white;}
   .kpi-card.green{background:var(--green);color:white;}
   .kpi-card.coral{background:var(--coral);color:white;}
-  .kpi-label{font-size:11px;font-weight:500;opacity:0.75;margin-bottom:5px;}
+  .kpi-card.q1c{background:var(--q1);color:white;}
+  .kpi-card.q2c{background:var(--q2);color:white;}
+  .kpi-card.q3c{background:var(--q3);color:white;}
+  .kpi-card.q4c{background:var(--q4);color:white;}
+  .kpi-label{font-size:11px;font-weight:500;opacity:0.8;margin-bottom:5px;}
   .kpi-value{font-size:24px;font-weight:800;line-height:1;margin-bottom:3px;}
   .kpi-sub{font-size:11px;font-weight:500;opacity:0.7;}
 
   .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .charts-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
   .chart-card{background:white;border-radius:18px;padding:20px;box-shadow:0 4px 24px rgba(43,78,230,0.08);}
   .chart-card h3{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:12px;}
   .chart-wrap{position:relative;height:220px;}
+  .chart-wrap-lg{position:relative;height:270px;}
 
   .table-card{background:white;border-radius:18px;padding:20px;box-shadow:0 4px 24px rgba(43,78,230,0.08);margin-top:16px;overflow-x:auto;}
   .table-card h3{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:12px;}
   table{width:100%;border-collapse:collapse;font-size:12px;}
   th{text-align:left;padding:8px 11px;font-size:10px;font-weight:600;color:var(--grey-text);text-transform:uppercase;letter-spacing:0.4px;background:var(--cream);}
-  td{padding:10px 11px;border-bottom:1px solid var(--grey-light);}
+  td{padding:9px 11px;border-bottom:1px solid var(--grey-light);}
   tr:last-child td{border-bottom:none;}
   tr:hover td{background:#f8faff;}
   .dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0;}
@@ -62,6 +72,18 @@
   .badge.red{background:rgba(244,123,110,0.15);color:#b03020;}
   .badge.grey{background:var(--grey-light);color:var(--grey-text);}
 
+  /* Squad banners */
+  .squad-section{margin-bottom:20px;}
+  .squad-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px 16px;border-radius:12px;}
+  .squad-caroline{background:linear-gradient(90deg,rgba(244,123,110,0.12),rgba(244,123,110,0.04));border-left:4px solid var(--coral);}
+  .squad-antoine{background:linear-gradient(90deg,rgba(43,78,230,0.10),rgba(43,78,230,0.03));border-left:4px solid var(--blue);}
+  .squad-label{font-size:13px;font-weight:700;color:var(--navy);}
+  .squad-sub{font-size:11px;color:var(--grey-text);}
+
+  /* Future month styling */
+  .future-month{opacity:0.55;}
+  .future-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px;background:rgba(107,122,153,0.12);color:var(--grey-text);margin-left:6px;}
+
   .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px;}
   .spinner{width:44px;height:44px;border:4px solid var(--grey-light);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
@@ -69,7 +91,7 @@
 
   @media(max-width:768px){
     .main{padding:12px;}.header{padding:14px;}.filters{padding:10px 12px;}
-    .charts-grid{grid-template-columns:1fr;}.kpi-grid{grid-template-columns:repeat(2,1fr);}
+    .charts-grid,.charts-grid-3{grid-template-columns:1fr;}.kpi-grid{grid-template-columns:repeat(2,1fr);}
   }
 </style>
 </head>
@@ -89,10 +111,12 @@
 
 <div class="filters">
   <span class="filter-label">VUE :</span>
-  <button class="filter-btn active" id="btn-mensuelle" onclick="setView('mensuelle')">Mensuelle</button>
-  <button class="filter-btn" id="btn-trimestrielle" onclick="setView('trimestrielle')">Trimestrielle</button>
+  <button class="filter-btn active" id="btn-mensuelle"      onclick="setView('mensuelle')">Mensuelle</button>
+  <button class="filter-btn"        id="btn-trimestrielle"  onclick="setView('trimestrielle')">Trimestrielle</button>
+  <button class="filter-btn"        id="btn-annuelle"       onclick="setView('annuelle')">Annuelle</button>
   <div class="divider"></div>
   <span class="filter-label">MOIS :</span>
+  <button class="select-all-btn" id="monthSelectAll" onclick="toggleSelectAllMonths()">Tout</button>
   <div id="monthFilters" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
   <div class="divider"></div>
   <span class="filter-label">COMMERCIAL :</span>
@@ -106,8 +130,6 @@
 <script>
 const SHEET_ID = '1NfpK8RpEu-dftc2NildbKzsnDcxMYV9s0HnSHwM5ZVc';
 
-// Objectifs hardcodés depuis Feuille 3 (structure trop dégradée pour parsing fiable)
-// Format: { NOM: { Q1: obj, Q2: obj, Q3: obj, Q4: obj } }
 const OBJECTIVES = {
   Caroline: { Q1: 90000, Q2: 45000,  Q3: 0,      Q4: 40000 },
   Antoine:  { Q1: 90000, Q2: 100000, Q3: 0,       Q4: 0     },
@@ -115,8 +137,26 @@ const OBJECTIVES = {
   Baptiste: { Q1: 0,     Q2: 60000,  Q3: 60000,   Q4: 80000 },
 };
 
-const MONTHS_ORDER = ['janv. 2026','févr. 2026','mars 2026','avr. 2026','mai 2026','juin 2026',
-  'juil. 2026','août 2026','sept. 2026','oct. 2026','nov. 2026','déc. 2026'];
+// Squads : Caroline = manager de sa squad, Antoine = manager à partir de Q3
+const SQUADS = {
+  Caroline: {
+    label: 'Squad Caroline',
+    members: ['Caroline', 'Arthur'],
+    allQuarters: true,
+    color: '#F47B6E'
+  },
+  Antoine: {
+    label: 'Squad Antoine',
+    members: ['Antoine', 'Baptiste'],
+    fromQ3: true,       // visible à partir de Q3
+    color: '#2B4EE6'
+  }
+};
+
+const MONTHS_ORDER = [
+  'janv. 2026','févr. 2026','mars 2026','avr. 2026','mai 2026','juin 2026',
+  'juil. 2026','août 2026','sept. 2026','oct. 2026','nov. 2026','déc. 2026'
+];
 const QUARTERS = {
   Q1:['janv. 2026','févr. 2026','mars 2026'],
   Q2:['avr. 2026','mai 2026','juin 2026'],
@@ -127,20 +167,48 @@ const COLORS = {
   Antoine:'#2B4EE6', Arthur:'#5BC98A', Caroline:'#F47B6E',
   Baptiste:'#F5A623', Lucas:'#9B59B6', Antony:'#1ABC9C', Frederic:'#E67E22'
 };
+const Q_COLORS = ['#7C3AED','#0891B2','#059669','#DC2626']; // distinct des couleurs commerciaux
 
 let allSig = [];
 let currentView = 'mensuelle';
 let activeMonths = new Set();
 let activePersons = new Set();
+let allMonthsInData = [];
+let allPersonsInData = [];
 let charts = {};
+
+// Mois courant pour séparation passé/futur
+const NOW = new Date();
+const CURRENT_MONTH_IDX = MONTHS_ORDER.findIndex(m => {
+  const d = parseMonthLabel(m);
+  return d.getFullYear() === NOW.getFullYear() && d.getMonth() === NOW.getMonth();
+});
+
+function parseMonthLabel(label) {
+  const map = {
+    'janv.':0,'févr.':1,'mars':2,'avr.':3,'mai':4,'juin':5,
+    'juil.':6,'août':7,'sept.':8,'oct.':9,'nov.':10,'déc.':11
+  };
+  const [m, y] = label.split(' ');
+  return new Date(parseInt(y), map[m]||0, 1);
+}
+
+function isFutureMonth(mLabel) {
+  const idx = MONTHS_ORDER.indexOf(mLabel);
+  return idx > CURRENT_MONTH_IDX;
+}
+
+function getQuarterFromMonth(m) {
+  for(const [q,ms] of Object.entries(QUARTERS)) if(ms.includes(m)) return q;
+  return null;
+}
 
 function pn(v) {
   if (!v && v !== 0) return 0;
   return parseFloat(String(v).replace(/\s/g,'').replace(',','.')) || 0;
 }
-function fmt(n) { return Math.round(n||0).toLocaleString('fr-FR') + ' €'; }
+function fmt(n)  { return Math.round(n||0).toLocaleString('fr-FR') + ' €'; }
 function fmtK(n) { const v = Math.round(n||0); return v >= 1000 ? (v/1000).toFixed(0)+'k' : String(v); }
-function getQ(m) { for(const [q,ms] of Object.entries(QUARTERS)) if(ms.includes(m)) return q; return null; }
 
 async function loadData() {
   document.getElementById('lastUpdate').textContent = '↻ Chargement…';
@@ -158,17 +226,18 @@ async function loadData() {
         montant:  pn(r['Montant (€ HT)']),
         partQ:    pn(r['Part Qualineo']),
         recurrent:pn(r['Dont récurrent']),
+        dateStr:  (r['Date signature'] || '').trim(),
       }))
       .filter(r => r.person && r.moisSig && MONTHS_ORDER.includes(r.moisSig));
 
-    const months  = [...new Set(allSig.map(d => d.moisSig))]
-      .sort((a,b) => MONTHS_ORDER.indexOf(a) - MONTHS_ORDER.indexOf(b));
-    const persons = [...new Set(allSig.map(d => d.person))].sort();
+    // Toujours tous les mois (y compris futurs)
+    allMonthsInData  = [...MONTHS_ORDER];
+    allPersonsInData = [...new Set(allSig.map(d => d.person))].sort();
 
-    activeMonths  = new Set(months);
-    activePersons = new Set(persons);
+    activeMonths  = new Set(allMonthsInData);
+    activePersons = new Set(allPersonsInData);
 
-    buildFilters(months, persons);
+    buildFilters(allMonthsInData, allPersonsInData);
     document.getElementById('lastUpdate').textContent =
       '↻ ' + new Date().toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
     render();
@@ -183,23 +252,36 @@ async function loadData() {
   }
 }
 
+let monthSelectAllState = true;
+function toggleSelectAllMonths() {
+  monthSelectAllState = !monthSelectAllState;
+  const btns = document.querySelectorAll('#monthFilters .filter-btn');
+  btns.forEach(btn => {
+    const m = btn.dataset.month;
+    if (monthSelectAllState) { activeMonths.add(m); btn.classList.add('active'); }
+    else { activeMonths.delete(m); btn.classList.remove('active'); }
+  });
+  document.getElementById('monthSelectAll').textContent = monthSelectAllState ? 'Tout' : 'Aucun';
+  render();
+}
+
 function buildFilters(months, persons) {
-  // Month filters
   const mf = document.getElementById('monthFilters');
   mf.innerHTML = '';
   months.forEach(m => {
     const btn = document.createElement('button');
     btn.className = 'filter-btn active';
+    btn.dataset.month = m;
     btn.textContent = m.replace(' 2026','');
+    if (isFutureMonth(m)) btn.style.opacity = '0.65';
     btn.onclick = () => {
-      activeMonths.has(m) ? activeMonths.delete(m) : activeMonths.add(m);
-      btn.classList.toggle('active');
+      if (activeMonths.has(m)) { activeMonths.delete(m); btn.classList.remove('active'); }
+      else { activeMonths.add(m); btn.classList.add('active'); }
       render();
     };
     mf.appendChild(btn);
   });
 
-  // Person filters
   const pf = document.getElementById('personFilters');
   pf.innerHTML = '';
   persons.forEach(p => {
@@ -226,8 +308,8 @@ function buildFilters(months, persons) {
 
 function setView(v) {
   currentView = v;
-  document.getElementById('btn-mensuelle').classList.toggle('active', v==='mensuelle');
-  document.getElementById('btn-trimestrielle').classList.toggle('active', v==='trimestrielle');
+  ['mensuelle','trimestrielle','annuelle'].forEach(k =>
+    document.getElementById('btn-'+k).classList.toggle('active', k===v));
   render();
 }
 
@@ -251,15 +333,61 @@ function chartOpts(stacked) {
   };
 }
 
-// ── MENSUELLE ──────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────
+// Helpers squads
+// ────────────────────────────────────────────────────────────────
+function getSquadForQuarter(q) {
+  // Q1, Q2 → seulement squad Caroline ; Q3, Q4 → les deux
+  const squads = [];
+  for (const [key, sq] of Object.entries(SQUADS)) {
+    if (sq.allQuarters) squads.push({key, ...sq});
+    else if (sq.fromQ3 && (q==='Q3'||q==='Q4')) squads.push({key, ...sq});
+  }
+  return squads;
+}
+
+function squadRowsHTML(persons, dataFn) {
+  // dataFn(person) → {nb, signe, recSigne, facture}
+  // Génère les lignes groupées par squad
+  const qs = ['Q1','Q2','Q3','Q4'];
+  // On utilise Q4 pour avoir toutes squads
+  const allSquads = Object.entries(SQUADS);
+  const html = [];
+  const done = new Set();
+  allSquads.forEach(([key, sq]) => {
+    const members = sq.members.filter(p => persons.includes(p));
+    if (!members.length) return;
+    html.push(`<tr style="background:linear-gradient(90deg,${sq.color}18,${sq.color}06)">
+      <td colspan="5" style="padding:6px 11px;font-size:11px;font-weight:700;color:${sq.color};letter-spacing:0.3px">
+        🏷 ${sq.label}${sq.fromQ3 ? ' <span style="font-weight:400;opacity:0.7">(dès Q3)</span>' : ''}
+      </td></tr>`);
+    members.forEach(p => {
+      const d = dataFn(p);
+      html.push(d);
+      done.add(p);
+    });
+  });
+  // Restants sans squad
+  persons.filter(p => !done.has(p)).forEach(p => html.push(dataFn(p)));
+  return html.join('');
+}
+
+// ────────────────────────────────────────────────────────────────
+// Vue MENSUELLE
+// ────────────────────────────────────────────────────────────────
 function renderMensuelle(data, persons) {
-  const months = [...new Set(data.map(d => d.moisSig))]
-    .sort((a,b) => MONTHS_ORDER.indexOf(a) - MONTHS_ORDER.indexOf(b));
+  const months = allMonthsInData.filter(m => activeMonths.has(m));
 
   const totalSigne  = data.reduce((s,d) => s+d.partQ, 0);
   const totalRecSig = data.reduce((s,d) => s+d.recurrent, 0);
   const factData    = allSig.filter(d => activePersons.has(d.person) && activeMonths.has(d.moisFact));
   const totalFact   = factData.reduce((s,d) => s+d.recurrent, 0);
+
+  // Dernière signature par commercial
+  const lastSig = {};
+  allSig.filter(d => activePersons.has(d.person)).forEach(d => {
+    if (!lastSig[d.person] || d.dateStr > lastSig[d.person].dateStr) lastSig[d.person] = d;
+  });
 
   const byP = {};
   persons.forEach(p => {
@@ -270,10 +398,28 @@ function renderMensuelle(data, persons) {
       signe:    pd.reduce((s,d)=>s+d.partQ,0),
       recSigne: pd.reduce((s,d)=>s+d.recurrent,0),
       facture:  pf.reduce((s,d)=>s+d.recurrent,0),
+      lastDate: lastSig[p]?.dateStr || '—',
+      lastMois: lastSig[p]?.moisSig || '—',
     };
   });
 
   const sorted = [...persons].sort((a,b) => (byP[b]?.recSigne||0)-(byP[a]?.recSigne||0));
+
+  // Squad rows helper
+  function rowFn(p) {
+    return `<tr>
+      <td><span style="display:inline-flex;align-items:center;gap:7px">
+        <span class="dot" style="background:${COLORS[p]||'#ccc'}"></span>
+        <strong>${p}</strong>
+      </span></td>
+      <td>${byP[p].nb}</td>
+      <td>${fmt(byP[p].signe)}</td>
+      <td><strong>${fmt(byP[p].recSigne)}</strong></td>
+      <td>${fmt(byP[p].facture)}</td>
+      <td style="color:var(--grey-text);font-size:11px">${byP[p].lastDate || '—'}</td>
+      <td style="font-size:11px">${byP[p].lastMois || '—'}</td>
+    </tr>`;
+  }
 
   document.getElementById('mainContent').innerHTML = `
     <div class="section-title">Vue d'ensemble <span class="pill">Mensuel</span></div>
@@ -312,38 +458,70 @@ function renderMensuelle(data, persons) {
       </div>
     </div>
 
+    <div class="section-title">Squads</div>
+
+    <!-- Squad Caroline -->
+    <div class="squad-section">
+      <div class="squad-header squad-caroline">
+        <span style="font-size:18px">🏷</span>
+        <div>
+          <div class="squad-label" style="color:#b03020">Squad Caroline</div>
+          <div class="squad-sub">Caroline · Arthur — actifs toute l'année</div>
+        </div>
+      </div>
+      <div class="charts-grid">
+        ${['Caroline','Arthur'].filter(p=>persons.includes(p)).map(p=>`
+        <div class="chart-card">
+          <h3 style="color:${COLORS[p]}">${p} — Récurrent signé / mois</h3>
+          <div class="chart-wrap"><canvas id="cSquad_${p}"></canvas></div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Squad Antoine (dès Q3) -->
+    <div class="squad-section">
+      <div class="squad-header squad-antoine">
+        <span style="font-size:18px">🏷</span>
+        <div>
+          <div class="squad-label" style="color:#1A3599">Squad Antoine</div>
+          <div class="squad-sub">Antoine · Baptiste — actifs dès Q3 (juil. 2026)</div>
+        </div>
+      </div>
+      <div class="charts-grid">
+        ${['Antoine','Baptiste'].filter(p=>persons.includes(p)).map(p=>`
+        <div class="chart-card">
+          <h3 style="color:${COLORS[p]}">${p} — Récurrent signé / mois</h3>
+          <div class="chart-wrap"><canvas id="cSquad_${p}"></canvas></div>
+        </div>`).join('')}
+      </div>
+    </div>
+
     <div class="section-title">Détail par commercial</div>
     <div class="table-card">
       <table>
         <thead><tr>
           <th>Commercial</th><th>Contrats</th>
           <th>Signé Part Q.</th><th>Récurrent Signé</th><th>Récurrent Facturé</th>
+          <th>Dernière signature</th><th>Mois</th>
         </tr></thead>
-        <tbody>
-          ${sorted.map(p => `<tr>
-            <td><span style="display:inline-flex;align-items:center;gap:7px">
-              <span class="dot" style="background:${COLORS[p]||'#ccc'}"></span>
-              <strong>${p}</strong>
-            </span></td>
-            <td>${byP[p].nb}</td>
-            <td>${fmt(byP[p].signe)}</td>
-            <td><strong>${fmt(byP[p].recSigne)}</strong></td>
-            <td>${fmt(byP[p].facture)}</td>
-          </tr>`).join('')}
-        </tbody>
+        <tbody>${squadRowsHTML(sorted, rowFn)}</tbody>
       </table>
     </div>`;
 
   destroyCharts();
 
+  // Séparer mois passés/futurs pour la coloration
+  const pastColor = 'rgba(43,78,230,0.7)';
+  const futureColor = 'rgba(43,78,230,0.28)';
+
   charts.c1 = new Chart(document.getElementById('cStack').getContext('2d'), {
     type:'bar',
     data:{
-      labels: months.map(m=>m.replace(' 2026','')),
+      labels: months.map(m => m.replace(' 2026','') + (isFutureMonth(m)?'*':'')),
       datasets: persons.map(p => ({
         label: p,
         data: months.map(m => data.filter(d=>d.person===p&&d.moisSig===m).reduce((s,d)=>s+d.recurrent,0)),
-        backgroundColor: COLORS[p]||'#ccc',
+        backgroundColor: months.map(m => isFutureMonth(m) ? (COLORS[p]||'#ccc')+'55' : (COLORS[p]||'#ccc')),
         borderRadius: 4,
       }))
     },
@@ -363,17 +541,50 @@ function renderMensuelle(data, persons) {
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{position:'right',labels:{font:{family:'Inter',size:11},boxWidth:11}}}}
   });
+
+  // Mini-graphes par personne
+  ['Caroline','Arthur','Antoine','Baptiste'].forEach(p => {
+    const el = document.getElementById('cSquad_'+p);
+    if (!el || !persons.includes(p)) return;
+    charts['sq_'+p] = new Chart(el.getContext('2d'), {
+      type:'bar',
+      data:{
+        labels: months.map(m => m.replace(' 2026','')),
+        datasets:[{
+          label: 'Récurrent signé',
+          data: months.map(m => allSig.filter(d=>d.person===p&&d.moisSig===m).reduce((s,d)=>s+d.recurrent,0)),
+          backgroundColor: months.map(m => isFutureMonth(m) ? (COLORS[p]||'#ccc')+'44' : (COLORS[p]||'#ccc')),
+          borderRadius:4,
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{
+          x:{grid:{display:false},ticks:{font:{family:'Inter',size:10}}},
+          y:{grid:{color:'#E8EDF5'},ticks:{font:{family:'Inter',size:10},callback:v=>fmtK(v)+'€'}}
+        }
+      }
+    });
+  });
 }
 
-// ── TRIMESTRIELLE ──────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────
+// Vue TRIMESTRIELLE
+// ────────────────────────────────────────────────────────────────
 function renderTrimestrielle(data, persons) {
   const qs = ['Q1','Q2','Q3','Q4'];
-  const qColors = ['#2B4EE6','#5BC98A','#F5A623','#F47B6E'];
 
   const qSigne = {}, qFact = {};
   qs.forEach(q => {
     qSigne[q] = allSig.filter(d=>activePersons.has(d.person)&&QUARTERS[q].includes(d.moisSig)).reduce((s,d)=>s+d.recurrent,0);
     qFact[q]  = allSig.filter(d=>activePersons.has(d.person)&&QUARTERS[q].includes(d.moisFact)).reduce((s,d)=>s+d.recurrent,0);
+  });
+
+  // Objectif global par trimestre
+  const qObjGlobal = {};
+  qs.forEach(q => {
+    qObjGlobal[q] = persons.reduce((s,p) => s+(OBJECTIVES[p]?.[q]||0), 0);
   });
 
   const byPQ = {};
@@ -382,51 +593,90 @@ function renderTrimestrielle(data, persons) {
     qs.forEach(q => {
       const facture = allSig.filter(d=>d.person===p&&QUARTERS[q].includes(d.moisFact)).reduce((s,d)=>s+d.recurrent,0);
       const obj     = OBJECTIVES[p]?.[q] || 0;
-      const pct     = obj > 0 ? Math.round(facture/obj*100) : null;
+      const pct     = obj > 0 ? (facture/obj*100).toFixed(1) : null;
       byPQ[p][q]    = { facture, obj, pct };
     });
   });
 
-  const activeQ = [...new Set([...activeMonths].map(getQ).filter(Boolean))];
+  // Identifier si un trimestre est futur
+  function isQuarterFuture(q) {
+    return QUARTERS[q].every(m => isFutureMonth(m));
+  }
+  function isQuarterPartialFuture(q) {
+    return QUARTERS[q].some(m => isFutureMonth(m)) && !isQuarterFuture(q);
+  }
+
+  // Colonnes : Q1 Fact | Q1 Obj | Q1 % | Q2 Fact | Q2 Obj | Q2 % | ...
+  function rowFnTrim(p) {
+    return `<tr>
+      <td><span style="display:inline-flex;align-items:center;gap:7px">
+        <span class="dot" style="background:${COLORS[p]||'#ccc'}"></span>
+        <strong>${p}</strong>
+      </span></td>
+      ${qs.map(q=>{
+        const d=byPQ[p][q];
+        const cls=d.pct===null?'grey':parseFloat(d.pct)>=100?'green':parseFloat(d.pct)>=70?'yellow':'red';
+        const futureStyle = isQuarterFuture(q) ? 'opacity:0.5' : '';
+        return `<td style="${futureStyle}">${fmt(d.facture)}${isQuarterFuture(q)?'<span class="future-badge">à venir</span>':''}</td>
+          <td style="${futureStyle}">${d.obj?fmt(d.obj):'<span style="color:var(--grey-text)">—</span>'}</td>
+          <td style="${futureStyle}">${d.pct!==null?`<span class="badge ${cls}">${d.pct}%</span>`:'<span style="color:var(--grey-text)">—</span>'}</td>`;
+      }).join('')}
+    </tr>`;
+  }
 
   document.getElementById('mainContent').innerHTML = `
     <div class="section-title">Bilan trimestriel <span class="pill">2026</span></div>
     <div class="kpi-grid">
       ${qs.map((q,i)=>`
-        <div class="kpi-card ${['blue','green','yellow','coral'][i]}">
-          <div class="kpi-label">${q} — Récurrent Facturé</div>
+        <div class="kpi-card q${i+1}c" style="${isQuarterFuture(q)?'opacity:0.65':''}">
+          <div class="kpi-label">${q} — Récurrent Facturé${isQuarterFuture(q)?' <span style="opacity:0.8;font-size:10px">(à venir)</span>':''}</div>
           <div class="kpi-value">${fmt(qFact[q])}</div>
-          <div class="kpi-sub">Signé : ${fmt(qSigne[q])}</div>
+          <div class="kpi-sub">Objectif global : ${fmt(qObjGlobal[q])} | Signé : ${fmt(qSigne[q])}</div>
         </div>`).join('')}
     </div>
 
-    <div class="section-title">Facturé vs Objectif par commercial</div>
+    <div class="section-title">Facturé vs Objectif par commercial & par trimestre</div>
     <div class="chart-card">
-      <div class="chart-wrap" style="height:270px"><canvas id="cQBar"></canvas></div>
+      <div class="chart-wrap-lg"><canvas id="cQBar"></canvas></div>
     </div>
 
-    <div class="section-title">Atteinte des objectifs (base facturé)</div>
+    <div class="section-title">Squads</div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="squad-header squad-caroline" style="margin-bottom:10px">
+          <span style="font-size:16px">🏷</span>
+          <div>
+            <div class="squad-label" style="color:#b03020;font-size:12px">Squad Caroline</div>
+            <div class="squad-sub">Caroline · Arthur</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="cSquadCaroline"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="squad-header squad-antoine" style="margin-bottom:10px">
+          <span style="font-size:16px">🏷</span>
+          <div>
+            <div class="squad-label" style="color:#1A3599;font-size:12px">Squad Antoine (dès Q3)</div>
+            <div class="squad-sub">Antoine · Baptiste</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="cSquadAntoine"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-title">Atteinte des objectifs — Facturé vs Objectif par trimestre</div>
     <div class="table-card">
       <table>
-        <thead><tr>
-          <th>Commercial</th>
-          ${qs.map(q=>`<th>${q} Facturé</th><th>${q} Obj.</th><th>${q} %</th>`).join('')}
-        </tr></thead>
-        <tbody>
-          ${persons.map(p=>`<tr>
-            <td><span style="display:inline-flex;align-items:center;gap:7px">
-              <span class="dot" style="background:${COLORS[p]||'#ccc'}"></span>
-              <strong>${p}</strong>
-            </span></td>
-            ${qs.map(q=>{
-              const d=byPQ[p][q];
-              const cls=d.pct===null?'grey':d.pct>=100?'green':d.pct>=70?'yellow':'red';
-              return `<td>${fmt(d.facture)}</td>
-                <td>${d.obj?fmt(d.obj):'<span style="color:var(--grey-text)">—</span>'}</td>
-                <td>${d.pct!==null?`<span class="badge ${cls}">${d.pct}%</span>`:'<span style="color:var(--grey-text)">—</span>'}</td>`;
-            }).join('')}
-          </tr>`).join('')}
-        </tbody>
+        <thead>
+          <tr>
+            <th rowspan="2">Commercial</th>
+            ${qs.map((q,i)=>`<th colspan="3" style="background:${Q_COLORS[i]}18;color:${Q_COLORS[i]};text-align:center">${q}${isQuarterFuture(q)?' ☆':''}</th>`).join('')}
+          </tr>
+          <tr>
+            ${qs.map(()=>`<th>Facturé</th><th>Objectif</th><th>Atteinte</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>${squadRowsHTML(persons, rowFnTrim)}</tbody>
       </table>
     </div>`;
 
@@ -437,17 +687,17 @@ function renderTrimestrielle(data, persons) {
     data:{
       labels: persons,
       datasets:[
-        ...activeQ.map(q=>({
+        ...qs.map((q,i)=>({
           label:`${q} Facturé`,
           data: persons.map(p=>byPQ[p][q].facture),
-          backgroundColor: qColors[qs.indexOf(q)]+'BB',
+          backgroundColor: Q_COLORS[i]+(isQuarterFuture(q)?'44':'BB'),
           borderRadius:4,
         })),
-        ...activeQ.map(q=>({
+        ...qs.map((q,i)=>({
           label:`${q} Objectif`,
           data: persons.map(p=>byPQ[p][q].obj),
           backgroundColor:'transparent',
-          borderColor: qColors[qs.indexOf(q)],
+          borderColor: Q_COLORS[i],
           borderWidth:2,
           borderRadius:4,
           type:'bar',
@@ -456,13 +706,282 @@ function renderTrimestrielle(data, persons) {
     },
     options: chartOpts(false)
   });
+
+  // Graphiques squad par trimestre
+  function squadChart(canvasId, members, label) {
+    const el = document.getElementById(canvasId);
+    if (!el) return;
+    const memberList = members.filter(p=>persons.includes(p));
+    charts[canvasId] = new Chart(el.getContext('2d'), {
+      type:'bar',
+      data:{
+        labels: qs,
+        datasets:[
+          ...memberList.map(p=>({
+            label:p+' Facturé',
+            data: qs.map(q=>byPQ[p]?.[q]?.facture||0),
+            backgroundColor: qs.map(q=>isQuarterFuture(q)?(COLORS[p]||'#ccc')+'44':(COLORS[p]||'#ccc')+'BB'),
+            borderRadius:4,
+          })),
+          ...memberList.map(p=>({
+            label:p+' Objectif',
+            data: qs.map(q=>byPQ[p]?.[q]?.obj||0),
+            type:'bar',
+            backgroundColor:'transparent',
+            borderColor: COLORS[p]||'#ccc',
+            borderWidth:2,
+            borderRadius:4,
+          })),
+        ]
+      },
+      options: chartOpts(false)
+    });
+  }
+  squadChart('cSquadCaroline',['Caroline','Arthur'],'Squad Caroline');
+  squadChart('cSquadAntoine',['Antoine','Baptiste'],'Squad Antoine');
 }
 
+// ────────────────────────────────────────────────────────────────
+// Vue ANNUELLE
+// ────────────────────────────────────────────────────────────────
+function renderAnnuelle(data, persons) {
+  const qs = ['Q1','Q2','Q3','Q4'];
+
+  // Totaux annuels globaux
+  const totalAnnuelFact = allSig.filter(d=>activePersons.has(d.person)).reduce((s,d)=>s+d.recurrent,0);
+  const totalAnnuelSign = allSig.filter(d=>activePersons.has(d.person)).reduce((s,d)=>s+d.recurrent,0);
+  const totalObjAnnuel  = persons.reduce((s,p) => s + qs.reduce((sq,q)=>sq+(OBJECTIVES[p]?.[q]||0),0), 0);
+  const pctAnnuel       = totalObjAnnuel > 0 ? (totalAnnuelFact/totalObjAnnuel*100).toFixed(1) : null;
+
+  // Par personne : total annuel facturé, objectif, %
+  const annuelByP = {};
+  persons.forEach(p => {
+    const facture = allSig.filter(d=>d.person===p).reduce((s,d)=>s+d.recurrent,0);
+    const signe   = allSig.filter(d=>d.person===p).reduce((s,d)=>s+d.recurrent,0);
+    const obj     = qs.reduce((s,q)=>s+(OBJECTIVES[p]?.[q]||0),0);
+    const pct     = obj > 0 ? (facture/obj*100).toFixed(1) : null;
+    const qData   = {};
+    qs.forEach(q => {
+      const f = allSig.filter(d=>d.person===p&&QUARTERS[q].includes(d.moisFact)).reduce((s,d)=>s+d.recurrent,0);
+      qData[q] = { facture:f, obj: OBJECTIVES[p]?.[q]||0 };
+    });
+    annuelByP[p] = { facture, signe, obj, pct, qData };
+  });
+
+  const sorted = [...persons].sort((a,b)=>(annuelByP[b]?.facture||0)-(annuelByP[a]?.facture||0));
+
+  // Top performer
+  const top = sorted[0] || '—';
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="section-title">Bilan Annuel 2026 <span class="pill">Annual</span></div>
+    <div class="kpi-grid">
+      <div class="kpi-card blue">
+        <div class="kpi-label">Récurrent Facturé (annuel)</div>
+        <div class="kpi-value">${fmt(totalAnnuelFact)}</div>
+        <div class="kpi-sub">${persons.length} commerciaux</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">Objectif Global</div>
+        <div class="kpi-value">${fmt(totalObjAnnuel)}</div>
+        <div class="kpi-sub">Somme des objectifs individuels</div>
+      </div>
+      <div class="kpi-card ${pctAnnuel!==null&&parseFloat(pctAnnuel)>=100?'green':parseFloat(pctAnnuel)>=70?'yellow':'coral'}">
+        <div class="kpi-label">Taux d'atteinte global</div>
+        <div class="kpi-value">${pctAnnuel!==null?pctAnnuel+'%':'—'}</div>
+        <div class="kpi-sub">Facturé / Objectif</div>
+      </div>
+      <div class="kpi-card yellow">
+        <div class="kpi-label">Top performer</div>
+        <div class="kpi-value" style="font-size:18px">${top}</div>
+        <div class="kpi-sub">${top!=='—'?fmt(annuelByP[top]?.facture||0):''}</div>
+      </div>
+    </div>
+
+    <div class="section-title">Récurrent Facturé vs Objectif — Vue annuelle</div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>📊 Facturé vs Objectif par commercial</h3>
+        <div class="chart-wrap-lg"><canvas id="cAnnBar"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>🥧 Part de chaque commercial (facturé)</h3>
+        <div class="chart-wrap-lg"><canvas id="cAnnDonut"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-title">Progression trimestrielle cumulée</div>
+    <div class="chart-card">
+      <h3>📈 Facturé cumulé par trimestre & commercial</h3>
+      <div class="chart-wrap-lg"><canvas id="cAnnLine"></canvas></div>
+    </div>
+
+    <div class="section-title">Squads — Bilan annuel</div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="squad-header squad-caroline" style="margin-bottom:10px">
+          <span style="font-size:16px">🏷</span>
+          <div><div class="squad-label" style="color:#b03020;font-size:12px">Squad Caroline</div>
+          <div class="squad-sub">Caroline · Arthur — toute l'année</div></div>
+        </div>
+        <div class="chart-wrap"><canvas id="cSquadAnnCaroline"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="squad-header squad-antoine" style="margin-bottom:10px">
+          <span style="font-size:16px">🏷</span>
+          <div><div class="squad-label" style="color:#1A3599;font-size:12px">Squad Antoine</div>
+          <div class="squad-sub">Antoine · Baptiste — actifs dès Q3</div></div>
+        </div>
+        <div class="chart-wrap"><canvas id="cSquadAnnAntoine"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-title">Tableau récapitulatif annuel</div>
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th rowspan="2">Commercial</th>
+            ${qs.map((q,i)=>`<th colspan="2" style="background:${Q_COLORS[i]}18;color:${Q_COLORS[i]};text-align:center">${q}</th>`).join('')}
+            <th colspan="3" style="background:#0F206018;color:#0F2060;text-align:center">ANNUEL</th>
+          </tr>
+          <tr>
+            ${qs.map(()=>`<th>Facturé</th><th>Objectif</th>`).join('')}
+            <th>Facturé</th><th>Objectif</th><th>Atteinte</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${squadRowsHTML(sorted, p => {
+            const d = annuelByP[p];
+            const cls = d.pct===null?'grey':parseFloat(d.pct)>=100?'green':parseFloat(d.pct)>=70?'yellow':'red';
+            return `<tr>
+              <td><span style="display:inline-flex;align-items:center;gap:7px">
+                <span class="dot" style="background:${COLORS[p]||'#ccc'}"></span>
+                <strong>${p}</strong>
+              </span></td>
+              ${qs.map(q=>`
+                <td${qs.indexOf(q)<2&&['Antoine','Baptiste'].includes(p)?' style="opacity:0.4"':''}>${fmt(d.qData[q].facture)}</td>
+                <td>${d.qData[q].obj?fmt(d.qData[q].obj):'—'}</td>
+              `).join('')}
+              <td><strong>${fmt(d.facture)}</strong></td>
+              <td>${d.obj?fmt(d.obj):'—'}</td>
+              <td>${d.pct!==null?`<span class="badge ${cls}">${d.pct}%</span>`:'—'}</td>
+            </tr>`;
+          })}
+          <tr style="background:#0F206010;font-weight:700">
+            <td><strong>TOTAL</strong></td>
+            ${qs.map(q=>{
+              const f = persons.reduce((s,p)=>s+(annuelByP[p]?.qData[q]?.facture||0),0);
+              const o = persons.reduce((s,p)=>s+(annuelByP[p]?.qData[q]?.obj||0),0);
+              return `<td><strong>${fmt(f)}</strong></td><td>${fmt(o)}</td>`;
+            }).join('')}
+            <td><strong>${fmt(totalAnnuelFact)}</strong></td>
+            <td><strong>${fmt(totalObjAnnuel)}</strong></td>
+            <td>${pctAnnuel!==null?`<span class="badge ${parseFloat(pctAnnuel)>=100?'green':parseFloat(pctAnnuel)>=70?'yellow':'red'}">${pctAnnuel}%</span>`:'—'}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+
+  destroyCharts();
+
+  // Bar facturé vs objectif
+  charts.cAnnBar = new Chart(document.getElementById('cAnnBar').getContext('2d'), {
+    type:'bar',
+    data:{
+      labels: sorted,
+      datasets:[
+        { label:'Facturé', data: sorted.map(p=>annuelByP[p].facture),
+          backgroundColor: sorted.map(p=>(COLORS[p]||'#ccc')+'BB'), borderRadius:6 },
+        { label:'Objectif', data: sorted.map(p=>annuelByP[p].obj),
+          backgroundColor:'transparent', borderColor: sorted.map(p=>COLORS[p]||'#ccc'),
+          borderWidth:2, borderRadius:6, type:'bar' },
+      ]
+    },
+    options: chartOpts(false)
+  });
+
+  // Donut
+  charts.cAnnDonut = new Chart(document.getElementById('cAnnDonut').getContext('2d'), {
+    type:'doughnut',
+    data:{
+      labels: persons,
+      datasets:[{ data: persons.map(p=>annuelByP[p].facture),
+        backgroundColor: persons.map(p=>COLORS[p]||'#ccc'), borderWidth:0 }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'right',labels:{font:{family:'Inter',size:11},boxWidth:11}}}}
+  });
+
+  // Ligne cumulée
+  charts.cAnnLine = new Chart(document.getElementById('cAnnLine').getContext('2d'), {
+    type:'line',
+    data:{
+      labels: qs,
+      datasets: persons.map(p=>({
+        label:p,
+        data: qs.map((q,qi) => qs.slice(0,qi+1).reduce((s,qq)=>s+(annuelByP[p]?.qData[qq]?.facture||0),0)),
+        borderColor: COLORS[p]||'#ccc',
+        backgroundColor: (COLORS[p]||'#ccc')+'22',
+        borderWidth:2,
+        pointRadius:5,
+        fill:false,
+        tension:0.3,
+      }))
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{font:{family:'Inter',size:11},boxWidth:11}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{family:'Inter',size:11}}},
+        y:{grid:{color:'#E8EDF5'},ticks:{font:{family:'Inter',size:11},callback:v=>fmtK(v)+'€'}}
+      }
+    }
+  });
+
+  // Graphiques squads annuel
+  function squadAnnChart(canvasId, members) {
+    const el = document.getElementById(canvasId);
+    if (!el) return;
+    const ml = members.filter(p=>persons.includes(p));
+    charts[canvasId] = new Chart(el.getContext('2d'), {
+      type:'bar',
+      data:{
+        labels: qs,
+        datasets:[
+          ...ml.map(p=>({
+            label:p+' Facturé',
+            data: qs.map(q=>annuelByP[p]?.qData[q]?.facture||0),
+            backgroundColor: qs.map(q=>(COLORS[p]||'#ccc')+(qs.indexOf(q)>=2?'BB':'55')),
+            borderRadius:4,
+          })),
+          ...ml.map(p=>({
+            label:p+' Objectif',
+            data: qs.map(q=>annuelByP[p]?.qData[q]?.obj||0),
+            backgroundColor:'transparent',
+            borderColor: COLORS[p]||'#ccc',
+            borderWidth:2,
+            borderRadius:4,
+            type:'bar',
+          })),
+        ]
+      },
+      options: chartOpts(false)
+    });
+  }
+  squadAnnChart('cSquadAnnCaroline',['Caroline','Arthur']);
+  squadAnnChart('cSquadAnnAntoine',['Antoine','Baptiste']);
+}
+
+// ────────────────────────────────────────────────────────────────
+// Render dispatch
+// ────────────────────────────────────────────────────────────────
 function render() {
   const data    = getFiltered();
   const persons = [...activePersons].sort();
-  if (currentView==='mensuelle') renderMensuelle(data, persons);
-  else renderTrimestrielle(data, persons);
+  if      (currentView==='mensuelle')     renderMensuelle(data, persons);
+  else if (currentView==='trimestrielle') renderTrimestrielle(data, persons);
+  else                                    renderAnnuelle(data, persons);
 }
 
 loadData();
