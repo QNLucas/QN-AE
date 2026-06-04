@@ -340,7 +340,7 @@ function getFiltered() {
 }
 
 function destroyCharts() {
-  Object.values(charts).forEach(c => { try{c.destroy();}catch(e){} });
+  Object.values(charts).forEach(c => { try{ if(c && typeof c.destroy==='function') c.destroy(); }catch(e){} });
   charts = {};
 }
 
@@ -460,6 +460,7 @@ function renderMensuelle(data, persons) {
     </tr>`;
   }
 
+  destroyCharts();
   document.getElementById('mainContent').innerHTML = `
     <div class="section-title">Vue d'ensemble <span class="pill">Mensuel</span></div>
     <div class="kpi-grid">
@@ -547,9 +548,7 @@ function renderMensuelle(data, persons) {
       </table>
     </div>`;
 
-  destroyCharts();
-
-  requestAnimationFrame(() => {
+  setTimeout(() => {
 
   // Séparer mois passés/futurs pour la coloration
   const pastColor = 'rgba(43,78,230,0.7)';
@@ -608,7 +607,7 @@ function renderMensuelle(data, persons) {
       }
     });
   });
-  }); // end requestAnimationFrame
+  }, 0); // end setTimeout
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -666,6 +665,7 @@ function renderTrimestrielle(data, persons) {
     </tr>`;
   }
 
+  destroyCharts();
   document.getElementById('mainContent').innerHTML = `
     <div class="section-title">Bilan trimestriel <span class="pill">2026</span></div>
     <div class="kpi-grid">
@@ -722,9 +722,7 @@ function renderTrimestrielle(data, persons) {
       </div>
     </div>`;
 
-  destroyCharts();
-
-  requestAnimationFrame(() => {
+  setTimeout(() => {
 
   charts.c1 = new Chart(document.getElementById('cQBar').getContext('2d'), {
     type:'bar',
@@ -800,7 +798,7 @@ function renderTrimestrielle(data, persons) {
   squadChart('cSquadCaroline',['Caroline','Arthur','Baptiste'],'Squad Caroline','#F47B6E');
   squadChart('cSquadAntoine',['Antoine'],'Squad Antoine','#2B4EE6');
 
-  }); // end requestAnimationFrame
+  }, 0); // end setTimeout
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -850,6 +848,7 @@ function renderAnnuelle(data, persons) {
   const panierCaroline = squadPanier(['Caroline','Arthur','Baptiste']);
   const panierAntoine  = squadPanier(['Antoine']);
 
+  destroyCharts();
   document.getElementById('mainContent').innerHTML = `
     <div class="section-title">Bilan Annuel 2026 <span class="pill">Annual</span></div>
     <div class="kpi-grid">
@@ -981,9 +980,7 @@ function renderAnnuelle(data, persons) {
       </table>
     </div>`;
 
-  destroyCharts();
-
-  requestAnimationFrame(() => {
+  setTimeout(() => {
 
   // Bar facturé vs objectif annuel - interleaver par trimestre
   charts.cAnnBar = new Chart(document.getElementById('cAnnBar').getContext('2d'), {
@@ -1069,7 +1066,7 @@ function renderAnnuelle(data, persons) {
   squadAnnChart('cSquadAnnCaroline',['Caroline','Arthur','Baptiste']);
   squadAnnChart('cSquadAnnAntoine',['Antoine']);
 
-  }); // end requestAnimationFrame
+  }, 0); // end setTimeout
 }
 
 // ────────────────────────────────────────────────────────────────
