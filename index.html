@@ -725,14 +725,14 @@ function renderTrimestrielle(data, persons) {
     type:'bar',
     data:{
       labels: persons,
-      datasets:[
-        ...qs.map((q,i)=>({
+      datasets: qs.flatMap((q,i)=>[
+        {
           label:`${q} Facturé`,
           data: persons.map(p=>byPQ[p][q].facture),
           backgroundColor: Q_COLORS[i]+(isQuarterFuture(q)?'44':'BB'),
           borderRadius:4,
-        })),
-        ...qs.map((q,i)=>({
+        },
+        {
           label:`${q} Objectif`,
           data: persons.map(p=>byPQ[p][q].obj),
           backgroundColor:'transparent',
@@ -740,44 +740,60 @@ function renderTrimestrielle(data, persons) {
           borderWidth:2,
           borderRadius:4,
           type:'bar',
-        })),
-      ]
+        },
+      ])
     },
     options: chartOpts(false)
   });
 
-  // Graphiques squad par trimestre
-  function squadChart(canvasId, members, label) {
+  // Graphiques squad par trimestre + % atteinte cumulé squad
+  function squadChart(canvasId, members, squadLabel, squadColor) {
     const el = document.getElementById(canvasId);
     if (!el) return;
     const memberList = members.filter(p=>persons.includes(p));
+
+    // % atteinte cumulé squad
+    const squadFact = qs.reduce((s,q)=>s+memberList.reduce((ss,p)=>ss+(byPQ[p]?.[q]?.facture||0),0),0);
+    const squadObj  = qs.reduce((s,q)=>s+memberList.reduce((ss,p)=>ss+(byPQ[p]?.[q]?.obj||0),0),0);
+    const squadPct  = squadObj > 0 ? (squadFact/squadObj*100).toFixed(1) : null;
+    const cls = squadPct===null?'grey':parseFloat(squadPct)>=100?'green':parseFloat(squadPct)>=70?'yellow':'red';
+
+    // Injecter le badge % dans le sous-titre de la card
+    const card = el.closest('.chart-card');
+    if (card) {
+      const sub = card.querySelector('.squad-sub');
+      if (sub && squadPct!==null) {
+        sub.innerHTML += ` &nbsp;<span class="badge ${cls}" style="font-size:12px">${squadPct}% atteinte cumulée</span>`;
+      }
+    }
+
     charts[canvasId] = new Chart(el.getContext('2d'), {
       type:'bar',
       data:{
         labels: qs,
-        datasets:[
-          ...memberList.map(p=>({
-            label:p+' Facturé',
+        datasets: memberList.flatMap(p=>[
+          {
+            label: p+' Facturé',
             data: qs.map(q=>byPQ[p]?.[q]?.facture||0),
             backgroundColor: qs.map(q=>isQuarterFuture(q)?(COLORS[p]||'#ccc')+'44':(COLORS[p]||'#ccc')+'BB'),
             borderRadius:4,
-          })),
-          ...memberList.map(p=>({
-            label:p+' Objectif',
+          },
+          {
+            label: p+' Objectif',
             data: qs.map(q=>byPQ[p]?.[q]?.obj||0),
             type:'bar',
             backgroundColor:'transparent',
             borderColor: COLORS[p]||'#ccc',
             borderWidth:2,
             borderRadius:4,
-          })),
-        ]
+          },
+        ])
       },
       options: chartOpts(false)
     });
   }
-  squadChart('cSquadCaroline',['Caroline','Arthur','Baptiste'],'Squad Caroline');
-  squadChart('cSquadAntoine',['Antoine'],'Squad Antoine');
+  squadChart('cSquadCaroline',['Caroline','Arthur','Baptiste'],'Squad Caroline','#F47B6E');
+  squadChart('cSquadAntoine',['Antoine'],'Squad Antoine','#2B4EE6');
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -787,30 +803,45 @@ function renderAnnuelle(data, persons) {
   const qs = ['Q1','Q2','Q3','Q4'];
 
   // Totaux annuels globaux
-  const totalAnnuelFact = allSig.filter(d=>activePersons.has(d.person)).reduce((s,d)=>s+d.recurrent,0);
-  const totalAnnuelSign = allSig.filter(d=>activePersons.has(d.person)).reduce((s,d)=>s+d.recurrent,0);
-  const totalObjAnnuel  = persons.reduce((s,p) => s + qs.reduce((sq,q)=>sq+(OBJECTIVES[p]?.[q]||0),0), 0);
+  const allActiveSig    = allSig.filter(d=>activePersons.has(d.person));
+  const totalAnnuelFact = allActiveSig.reduce((s,d)=>s+d.recurrent,0);
+  const totalNbContrats = allActiveSig.length;
+  const totalObjAnnuel  = persons.reduce((s,p)=>s+qs.reduce((sq,q)=>sq+(OBJECTIVES[p]?.[q]||0),0),0);
   const pctAnnuel       = totalObjAnnuel > 0 ? (totalAnnuelFact/totalObjAnnuel*100).toFixed(1) : null;
+  // Panier moyen global = récurrent signé / nb contrats (hors 0)
+  const totalPanierSig  = allActiveSig.reduce((s,d)=>s+d.partQ,0);
+  const panierGlobal    = totalNbContrats > 0 ? Math.round(totalPanierSig/totalNbContrats) : 0;
 
-  // Par personne : total annuel facturé, objectif, %
+  // Par personne
   const annuelByP = {};
   persons.forEach(p => {
-    const facture = allSig.filter(d=>d.person===p).reduce((s,d)=>s+d.recurrent,0);
-    const signe   = allSig.filter(d=>d.person===p).reduce((s,d)=>s+d.recurrent,0);
-    const obj     = qs.reduce((s,q)=>s+(OBJECTIVES[p]?.[q]||0),0);
-    const pct     = obj > 0 ? (facture/obj*100).toFixed(1) : null;
-    const qData   = {};
+    const persSig  = allSig.filter(d=>d.person===p);
+    const facture  = persSig.reduce((s,d)=>s+d.recurrent,0);
+    const partQ    = persSig.reduce((s,d)=>s+d.partQ,0);
+    const nbCont   = persSig.length;
+    const panier   = nbCont > 0 ? Math.round(partQ/nbCont) : 0;
+    const obj      = qs.reduce((s,q)=>s+(OBJECTIVES[p]?.[q]||0),0);
+    const pct      = obj > 0 ? (facture/obj*100).toFixed(1) : null;
+    const qData    = {};
     qs.forEach(q => {
       const f = allSig.filter(d=>d.person===p&&QUARTERS[q].includes(d.moisFact)).reduce((s,d)=>s+d.recurrent,0);
       qData[q] = { facture:f, obj: OBJECTIVES[p]?.[q]||0 };
     });
-    annuelByP[p] = { facture, signe, obj, pct, qData };
+    annuelByP[p] = { facture, partQ, nbCont, panier, obj, pct, qData };
   });
 
   const sorted = [...persons].sort((a,b)=>(annuelByP[b]?.facture||0)-(annuelByP[a]?.facture||0));
+  const top    = sorted[0] || '—';
 
-  // Top performer
-  const top = sorted[0] || '—';
+  // Panier moyen par squad
+  function squadPanier(members) {
+    const ml   = members.filter(p=>persons.includes(p));
+    const tot  = ml.reduce((s,p)=>s+(annuelByP[p]?.partQ||0),0);
+    const nb   = ml.reduce((s,p)=>s+(annuelByP[p]?.nbCont||0),0);
+    return nb > 0 ? Math.round(tot/nb) : 0;
+  }
+  const panierCaroline = squadPanier(['Caroline','Arthur','Baptiste']);
+  const panierAntoine  = squadPanier(['Antoine']);
 
   document.getElementById('mainContent').innerHTML = `
     <div class="section-title">Bilan Annuel 2026 <span class="pill">Annual</span></div>
@@ -818,7 +849,7 @@ function renderAnnuelle(data, persons) {
       <div class="kpi-card blue">
         <div class="kpi-label">Récurrent Facturé (annuel)</div>
         <div class="kpi-value">${fmt(totalAnnuelFact)}</div>
-        <div class="kpi-sub">${persons.length} commerciaux</div>
+        <div class="kpi-sub">${totalNbContrats} contrats · ${persons.length} commerciaux</div>
       </div>
       <div class="kpi-card green">
         <div class="kpi-label">Objectif Global</div>
@@ -837,22 +868,41 @@ function renderAnnuelle(data, persons) {
       </div>
     </div>
 
+    <div class="section-title">Panier moyen <span class="pill">Part Qualineo / contrat</span></div>
+    <div class="kpi-grid">
+      <div class="kpi-card blue">
+        <div class="kpi-label">Panier moyen global</div>
+        <div class="kpi-value">${fmt(panierGlobal)}</div>
+        <div class="kpi-sub">${totalNbContrats} contrats au total</div>
+      </div>
+      <div class="kpi-card" style="background:linear-gradient(135deg,#F47B6E,#e05a4d);color:white">
+        <div class="kpi-label">Squad Caroline</div>
+        <div class="kpi-value">${fmt(panierCaroline)}</div>
+        <div class="kpi-sub">Caroline · Arthur · Baptiste</div>
+      </div>
+      <div class="kpi-card" style="background:linear-gradient(135deg,#2B4EE6,#1A3599);color:white">
+        <div class="kpi-label">Squad Antoine</div>
+        <div class="kpi-value">${fmt(panierAntoine)}</div>
+        <div class="kpi-sub">Antoine (Q3–Q4)</div>
+      </div>
+      ${sorted.map(p=>`
+      <div class="kpi-card">
+        <div class="kpi-label" style="color:${COLORS[p]||'#888'}">${p}</div>
+        <div class="kpi-value" style="font-size:20px">${fmt(annuelByP[p].panier)}</div>
+        <div class="kpi-sub">${annuelByP[p].nbCont} contrat${annuelByP[p].nbCont>1?'s':''}</div>
+      </div>`).join('')}
+    </div>
+
     <div class="section-title">Récurrent Facturé vs Objectif — Vue annuelle</div>
     <div class="charts-grid">
       <div class="chart-card">
-        <h3>📊 Facturé vs Objectif par commercial</h3>
+        <h3>Facturé vs Objectif par commercial</h3>
         <div class="chart-wrap-lg"><canvas id="cAnnBar"></canvas></div>
       </div>
       <div class="chart-card">
-        <h3>🥧 Part de chaque commercial (facturé)</h3>
-        <div class="chart-wrap-lg"><canvas id="cAnnDonut"></canvas></div>
+        <h3>Panier moyen par commercial</h3>
+        <div class="chart-wrap-lg"><canvas id="cAnnPanier"></canvas></div>
       </div>
-    </div>
-
-    <div class="section-title">Progression trimestrielle cumulée</div>
-    <div class="chart-card">
-      <h3>📈 Facturé cumulé par trimestre & commercial</h3>
-      <div class="chart-wrap-lg"><canvas id="cAnnLine"></canvas></div>
     </div>
 
     <div class="section-title">Squads — Bilan annuel</div>
@@ -882,16 +932,16 @@ function renderAnnuelle(data, persons) {
           <tr>
             <th rowspan="2">Commercial</th>
             ${qs.map((q,i)=>`<th colspan="2" style="background:${Q_COLORS[i]}18;color:${Q_COLORS[i]};text-align:center">${q}</th>`).join('')}
-            <th colspan="3" style="background:#0F206018;color:#0F2060;text-align:center">ANNUEL</th>
+            <th colspan="4" style="background:#0F206018;color:#0F2060;text-align:center">ANNUEL</th>
           </tr>
           <tr>
             ${qs.map(()=>`<th>Facturé</th><th>Objectif</th>`).join('')}
-            <th>Facturé</th><th>Objectif</th><th>Atteinte</th>
+            <th>Facturé</th><th>Objectif</th><th>Atteinte</th><th>Panier moy.</th>
           </tr>
         </thead>
         <tbody>
           ${squadRowsHTML(sorted, p => {
-            const d = annuelByP[p];
+            const d   = annuelByP[p];
             const cls = d.pct===null?'grey':parseFloat(d.pct)>=100?'green':parseFloat(d.pct)>=70?'yellow':'red';
             return `<tr>
               <td><span style="display:inline-flex;align-items:center;gap:7px">
@@ -905,8 +955,9 @@ function renderAnnuelle(data, persons) {
               <td><strong>${fmt(d.facture)}</strong></td>
               <td>${d.obj?fmt(d.obj):'—'}</td>
               <td>${d.pct!==null?`<span class="badge ${cls}">${d.pct}%</span>`:'—'}</td>
+              <td><strong>${fmt(d.panier)}</strong> <span style="font-size:10px;color:var(--grey-text)">${d.nbCont} ct.</span></td>
             </tr>`;
-          }, 11)}
+          }, 12)}
           <tr style="background:#0F206010;font-weight:700">
             <td><strong>TOTAL</strong></td>
             ${qs.map(q=>{
@@ -917,6 +968,7 @@ function renderAnnuelle(data, persons) {
             <td><strong>${fmt(totalAnnuelFact)}</strong></td>
             <td><strong>${fmt(totalObjAnnuel)}</strong></td>
             <td>${pctAnnuel!==null?`<span class="badge ${parseFloat(pctAnnuel)>=100?'green':parseFloat(pctAnnuel)>=70?'yellow':'red'}">${pctAnnuel}%</span>`:'—'}</td>
+            <td><strong>${fmt(panierGlobal)}</strong> <span style="font-size:10px;color:var(--grey-text)">${totalNbContrats} ct.</span></td>
           </tr>
         </tbody>
       </table>
@@ -924,61 +976,58 @@ function renderAnnuelle(data, persons) {
 
   destroyCharts();
 
-  // Bar facturé vs objectif
+  // Bar facturé vs objectif annuel - interleaver par trimestre
   charts.cAnnBar = new Chart(document.getElementById('cAnnBar').getContext('2d'), {
     type:'bar',
     data:{
       labels: sorted,
-      datasets:[
-        { label:'Facturé', data: sorted.map(p=>annuelByP[p].facture),
-          backgroundColor: sorted.map(p=>(COLORS[p]||'#ccc')+'BB'), borderRadius:6 },
-        { label:'Objectif', data: sorted.map(p=>annuelByP[p].obj),
-          backgroundColor:'transparent', borderColor: sorted.map(p=>COLORS[p]||'#ccc'),
-          borderWidth:2, borderRadius:6, type:'bar' },
-      ]
+      datasets: qs.flatMap((q,i)=>[
+        {
+          label:`${q} Facturé`,
+          data: sorted.map(p=>annuelByP[p].qData[q].facture),
+          backgroundColor: Q_COLORS[i]+(isQuarterFuture(q)?'44':'99'),
+          borderRadius:4,
+        },
+        {
+          label:`${q} Objectif`,
+          data: sorted.map(p=>annuelByP[p].qData[q].obj),
+          backgroundColor:'transparent',
+          borderColor: Q_COLORS[i],
+          borderWidth:2,
+          borderRadius:4,
+          type:'bar',
+        },
+      ])
     },
     options: chartOpts(false)
   });
 
-  // Donut
-  charts.cAnnDonut = new Chart(document.getElementById('cAnnDonut').getContext('2d'), {
-    type:'doughnut',
+  // Graphique panier moyen par commercial
+  charts.cAnnPanier = new Chart(document.getElementById('cAnnPanier').getContext('2d'), {
+    type:'bar',
     data:{
-      labels: persons,
-      datasets:[{ data: persons.map(p=>annuelByP[p].facture),
-        backgroundColor: persons.map(p=>COLORS[p]||'#ccc'), borderWidth:0 }]
-    },
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'right',labels:{font:{family:'Inter',size:11},boxWidth:11}}}}
-  });
-
-  // Ligne cumulée
-  charts.cAnnLine = new Chart(document.getElementById('cAnnLine').getContext('2d'), {
-    type:'line',
-    data:{
-      labels: qs,
-      datasets: persons.map(p=>({
-        label:p,
-        data: qs.map((q,qi) => qs.slice(0,qi+1).reduce((s,qq)=>s+(annuelByP[p]?.qData[qq]?.facture||0),0)),
-        borderColor: COLORS[p]||'#ccc',
-        backgroundColor: (COLORS[p]||'#ccc')+'22',
-        borderWidth:2,
-        pointRadius:5,
-        fill:false,
-        tension:0.3,
-      }))
+      labels: sorted,
+      datasets:[{
+        label:'Panier moyen (Part Qualineo / contrat)',
+        data: sorted.map(p=>annuelByP[p].panier),
+        backgroundColor: sorted.map(p=>(COLORS[p]||'#ccc')+'CC'),
+        borderRadius:6,
+      }]
     },
     options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{labels:{font:{family:'Inter',size:11},boxWidth:11}}},
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label: ctx=>' '+fmt(ctx.raw)}}
+      },
       scales:{
         x:{grid:{display:false},ticks:{font:{family:'Inter',size:11}}},
-        y:{grid:{color:'#E8EDF5'},ticks:{font:{family:'Inter',size:11},callback:v=>fmtK(v)+'€'}}
+        y:{grid:{color:'#E8EDF5'},ticks:{font:{family:'Inter',size:11},callback:v=>fmtK(v)+' €'}}
       }
     }
   });
 
-  // Graphiques squads annuel
+  // Graphiques squads annuel - interleaver facturé/obj par trimestre
   function squadAnnChart(canvasId, members) {
     const el = document.getElementById(canvasId);
     if (!el) return;
@@ -987,23 +1036,23 @@ function renderAnnuelle(data, persons) {
       type:'bar',
       data:{
         labels: qs,
-        datasets:[
-          ...ml.map(p=>({
-            label:p+' Facturé',
+        datasets: ml.flatMap(p=>[
+          {
+            label: p+' Facturé',
             data: qs.map(q=>annuelByP[p]?.qData[q]?.facture||0),
             backgroundColor: qs.map(q=>(COLORS[p]||'#ccc')+(qs.indexOf(q)>=2?'BB':'55')),
             borderRadius:4,
-          })),
-          ...ml.map(p=>({
-            label:p+' Objectif',
+          },
+          {
+            label: p+' Objectif',
             data: qs.map(q=>annuelByP[p]?.qData[q]?.obj||0),
             backgroundColor:'transparent',
             borderColor: COLORS[p]||'#ccc',
             borderWidth:2,
             borderRadius:4,
             type:'bar',
-          })),
-        ]
+          },
+        ])
       },
       options: chartOpts(false)
     });
