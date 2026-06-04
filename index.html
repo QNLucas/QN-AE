@@ -136,6 +136,7 @@ const OBJECTIVES = {
   Antoine:  { Q1: 90000, Q2: 100000, Q3: 0,       Q4: 0     },
   Arthur:   { Q1: 90000, Q2: 90000,  Q3: 90000,   Q4: 90000 },
   Baptiste: { Q1: 0,     Q2: 60000,  Q3: 60000,   Q4: 80000 },
+  Lucas:    { Q1: 40000, Q2: 45000,  Q3: 50000,   Q4: 30000 },
 };
 
 // Squads :
@@ -196,6 +197,13 @@ function parseMonthLabel(label) {
 function isFutureMonth(mLabel) {
   const idx = MONTHS_ORDER.indexOf(mLabel);
   return idx > CURRENT_MONTH_IDX;
+}
+
+function isQuarterFuture(q) {
+  return QUARTERS[q].every(m => isFutureMonth(m));
+}
+function isQuarterPartialFuture(q) {
+  return QUARTERS[q].some(m => isFutureMonth(m)) && !isQuarterFuture(q);
 }
 
 function getQuarterFromMonth(m) {
@@ -639,14 +647,6 @@ function renderTrimestrielle(data, persons) {
     });
   });
 
-  // Identifier si un trimestre est futur
-  function isQuarterFuture(q) {
-    return QUARTERS[q].every(m => isFutureMonth(m));
-  }
-  function isQuarterPartialFuture(q) {
-    return QUARTERS[q].some(m => isFutureMonth(m)) && !isQuarterFuture(q);
-  }
-
   // Colonnes : Q1 Fact | Q1 Obj | Q1 % | Q2 Fact | Q2 Obj | Q2 % | ...
   function rowFnTrim(p) {
     return `<tr>
@@ -983,6 +983,7 @@ function renderAnnuelle(data, persons) {
   setTimeout(() => {
 
   // Bar facturé vs objectif annuel - interleaver par trimestre
+  try {
   charts.cAnnBar = new Chart(document.getElementById('cAnnBar').getContext('2d'), {
     type:'bar',
     data:{
@@ -1007,8 +1008,10 @@ function renderAnnuelle(data, persons) {
     },
     options: chartOpts(false)
   });
+  } catch(e) { console.error('cAnnBar error:', e); }
 
   // Graphique panier moyen par commercial
+  try {
   charts.cAnnPanier = new Chart(document.getElementById('cAnnPanier').getContext('2d'), {
     type:'bar',
     data:{
@@ -1032,12 +1035,14 @@ function renderAnnuelle(data, persons) {
       }
     }
   });
+  } catch(e) { console.error('cAnnPanier error:', e); }
 
   // Graphiques squads annuel - interleaver facturé/obj par trimestre
   function squadAnnChart(canvasId, members) {
     const el = document.getElementById(canvasId);
-    if (!el) return;
+    if (!el) { console.error('canvas not found:', canvasId); return; }
     const ml = members.filter(p=>persons.includes(p));
+    try {
     charts[canvasId] = new Chart(el.getContext('2d'), {
       type:'bar',
       data:{
@@ -1062,6 +1067,7 @@ function renderAnnuelle(data, persons) {
       },
       options: chartOpts(false)
     });
+    } catch(e) { console.error('squadAnnChart error for', canvasId, e); }
   }
   squadAnnChart('cSquadAnnCaroline',['Caroline','Arthur','Baptiste']);
   squadAnnChart('cSquadAnnAntoine',['Antoine']);
