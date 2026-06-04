@@ -120,6 +120,7 @@
   <div id="monthFilters" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
   <div class="divider"></div>
   <span class="filter-label">COMMERCIAL :</span>
+  <button class="select-all-btn" id="personSelectAll" onclick="toggleSelectAllPersons()">Tout</button>
   <div id="personFilters" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
 </div>
 
@@ -264,6 +265,27 @@ function toggleSelectAllMonths() {
   render();
 }
 
+let personSelectAllState = true;
+function toggleSelectAllPersons() {
+  personSelectAllState = !personSelectAllState;
+  const btns = document.querySelectorAll('#personFilters .filter-btn');
+  btns.forEach(btn => {
+    const p = btn.dataset.person;
+    const c = COLORS[p] || '#888';
+    if (personSelectAllState) {
+      activePersons.add(p);
+      btn.style.cssText = `background:${c};color:white;border-color:${c}`;
+      btn.classList.add('active');
+    } else {
+      activePersons.delete(p);
+      btn.style.cssText = `background:white;color:${c};border-color:${c}`;
+      btn.classList.remove('active');
+    }
+  });
+  document.getElementById('personSelectAll').textContent = personSelectAllState ? 'Tout' : 'Aucun';
+  render();
+}
+
 function buildFilters(months, persons) {
   const mf = document.getElementById('monthFilters');
   mf.innerHTML = '';
@@ -287,6 +309,7 @@ function buildFilters(months, persons) {
     const c = COLORS[p] || '#888';
     const btn = document.createElement('button');
     btn.className = 'filter-btn active';
+    btn.dataset.person = p;
     btn.textContent = p;
     btn.style.cssText = `background:${c};color:white;border-color:${c}`;
     btn.onclick = () => {
@@ -379,7 +402,7 @@ function squadRowsHTML(persons, dataFn, colspan) {
     if (!done.has(p)) {
       html.push(`<tr style="background:#9B59B618">
         <td colspan="${cols}" style="padding:6px 11px;font-size:11px;font-weight:700;color:#9B59B6;letter-spacing:0.3px">
-          👑 Head of Sales
+          Head of Sales
         </td></tr>`);
       html.push(dataFn(p));
     }
@@ -651,6 +674,22 @@ function renderTrimestrielle(data, persons) {
         </div>`).join('')}
     </div>
 
+    <div class="section-title">Atteinte des objectifs — Facturé vs Objectif par trimestre</div>
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th rowspan="2">Commercial</th>
+            ${qs.map((q,i)=>`<th colspan="3" style="background:${Q_COLORS[i]}18;color:${Q_COLORS[i]};text-align:center">${q}${isQuarterFuture(q)?' ☆':''}</th>`).join('')}
+          </tr>
+          <tr>
+            ${qs.map(()=>`<th>Facturé</th><th>Objectif</th><th>Atteinte</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>${squadRowsHTML(persons, rowFnTrim, 13)}</tbody>
+      </table>
+    </div>
+
     <div class="section-title">Facturé vs Objectif par commercial & par trimestre</div>
     <div class="chart-card">
       <div class="chart-wrap-lg"><canvas id="cQBar"></canvas></div>
@@ -678,22 +717,6 @@ function renderTrimestrielle(data, persons) {
         </div>
         <div class="chart-wrap"><canvas id="cSquadAntoine"></canvas></div>
       </div>
-    </div>
-
-    <div class="section-title">Atteinte des objectifs — Facturé vs Objectif par trimestre</div>
-    <div class="table-card">
-      <table>
-        <thead>
-          <tr>
-            <th rowspan="2">Commercial</th>
-            ${qs.map((q,i)=>`<th colspan="3" style="background:${Q_COLORS[i]}18;color:${Q_COLORS[i]};text-align:center">${q}${isQuarterFuture(q)?' ☆':''}</th>`).join('')}
-          </tr>
-          <tr>
-            ${qs.map(()=>`<th>Facturé</th><th>Objectif</th><th>Atteinte</th>`).join('')}
-          </tr>
-        </thead>
-        <tbody>${squadRowsHTML(persons, rowFnTrim, 13)}</tbody>
-      </table>
     </div>`;
 
   destroyCharts();
