@@ -549,6 +549,8 @@ function renderMensuelle(data, persons) {
 
   destroyCharts();
 
+  requestAnimationFrame(() => {
+
   // Séparer mois passés/futurs pour la coloration
   const pastColor = 'rgba(43,78,230,0.7)';
   const futureColor = 'rgba(43,78,230,0.28)';
@@ -606,6 +608,7 @@ function renderMensuelle(data, persons) {
       }
     });
   });
+  }); // end requestAnimationFrame
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -721,6 +724,8 @@ function renderTrimestrielle(data, persons) {
 
   destroyCharts();
 
+  requestAnimationFrame(() => {
+
   charts.c1 = new Chart(document.getElementById('cQBar').getContext('2d'), {
     type:'bar',
     data:{
@@ -794,6 +799,8 @@ function renderTrimestrielle(data, persons) {
   }
   squadChart('cSquadCaroline',['Caroline','Arthur','Baptiste'],'Squad Caroline','#F47B6E');
   squadChart('cSquadAntoine',['Antoine'],'Squad Antoine','#2B4EE6');
+
+  }); // end requestAnimationFrame
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -976,6 +983,8 @@ function renderAnnuelle(data, persons) {
 
   destroyCharts();
 
+  requestAnimationFrame(() => {
+
   // Bar facturé vs objectif annuel - interleaver par trimestre
   charts.cAnnBar = new Chart(document.getElementById('cAnnBar').getContext('2d'), {
     type:'bar',
@@ -1059,6 +1068,8 @@ function renderAnnuelle(data, persons) {
   }
   squadAnnChart('cSquadAnnCaroline',['Caroline','Arthur','Baptiste']);
   squadAnnChart('cSquadAnnAntoine',['Antoine']);
+
+  }); // end requestAnimationFrame
 }
 
 // ────────────────────────────────────────────────────────────────
