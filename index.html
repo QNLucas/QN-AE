@@ -115,6 +115,10 @@
   <button class="filter-btn"        id="btn-trimestrielle"  onclick="setView('trimestrielle')">Trimestrielle</button>
   <button class="filter-btn"        id="btn-annuelle"       onclick="setView('annuelle')">Annuelle</button>
   <div class="divider"></div>
+  <span class="filter-label">SQUAD :</span>
+  <button class="select-all-btn" id="squadSelectAll" onclick="toggleSelectAllSquads()">Tout</button>
+  <div id="squadFilters" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+  <div class="divider"></div>
   <span class="filter-label">MOIS :</span>
   <button class="select-all-btn" id="monthSelectAll" onclick="toggleSelectAllMonths()">Tout</button>
   <div id="monthFilters" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
@@ -177,6 +181,7 @@ let activeMonths = new Set();
 let activePersons = new Set();
 let allMonthsInData = [];
 let allPersonsInData = [];
+let activeSquads = new Set(['Caroline','Antoine','HOS']);
 let charts = {};
 
 // Mois courant pour séparation passé/futur
@@ -247,6 +252,7 @@ async function loadData() {
     activePersons = new Set(allPersonsInData);
 
     buildFilters(allMonthsInData, allPersonsInData);
+    buildSquadFilters();
     document.getElementById('lastUpdate').textContent =
       '↻ ' + new Date().toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
     render();
@@ -259,6 +265,92 @@ async function loadData() {
       </div>`;
     document.getElementById('lastUpdate').textContent = '↻ Erreur — cliquer pour réessayer';
   }
+}
+
+// Squad filter helpers
+const SQUAD_DEFS = [
+  { key:'Caroline', label:'Squad Caroline', color:'#F47B6E' },
+  { key:'Antoine',  label:'Squad Antoine',  color:'#2B4EE6' },
+  { key:'HOS',      label:'Head of Sales',  color:'#9B59B6' },
+];
+
+function membersOfSquad(key) {
+  if (key === 'HOS') return HEAD_OF_SALES;
+  // union H1+H2 pour avoir tous les membres possibles
+  const all = new Set();
+  [...SQUADS_BY_HALF.H1, ...SQUADS_BY_HALF.H2].forEach(sq => {
+    if (sq.key === key) sq.members.forEach(m => all.add(m));
+  });
+  return [...all];
+}
+
+function syncPersonsFromSquads() {
+  // Recalcule activePersons selon les squads actives
+  // On ne touche pas aux boutons commerciaux individuels — les squads sont un filtre rapide
+  allPersonsInData.forEach(p => {
+    const inSquad = SQUAD_DEFS.some(sq => activeSquads.has(sq.key) && membersOfSquad(sq.key).includes(p));
+    if (inSquad) activePersons.add(p);
+    else activePersons.delete(p);
+  });
+  // Sync visuel des boutons commerciaux
+  document.querySelectorAll('#personFilters .filter-btn').forEach(btn => {
+    const p = btn.dataset.person;
+    const c = COLORS[p] || '#888';
+    if (activePersons.has(p)) {
+      btn.style.cssText = `background:${c};color:white;border-color:${c}`;
+      btn.classList.add('active');
+    } else {
+      btn.style.cssText = `background:white;color:${c};border-color:${c}`;
+      btn.classList.remove('active');
+    }
+  });
+}
+
+function buildSquadFilters() {
+  const sf = document.getElementById('squadFilters');
+  sf.innerHTML = '';
+  SQUAD_DEFS.forEach(sq => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn active';
+    btn.dataset.squad = sq.key;
+    btn.textContent = sq.label;
+    btn.style.cssText = `background:${sq.color};color:white;border-color:${sq.color}`;
+    btn.onclick = () => {
+      if (activeSquads.has(sq.key)) {
+        activeSquads.delete(sq.key);
+        btn.style.cssText = `background:white;color:${sq.color};border-color:${sq.color}`;
+        btn.classList.remove('active');
+      } else {
+        activeSquads.add(sq.key);
+        btn.style.cssText = `background:${sq.color};color:white;border-color:${sq.color}`;
+        btn.classList.add('active');
+      }
+      syncPersonsFromSquads();
+      render();
+    };
+    sf.appendChild(btn);
+  });
+}
+
+let squadSelectAllState = true;
+function toggleSelectAllSquads() {
+  squadSelectAllState = !squadSelectAllState;
+  document.querySelectorAll('#squadFilters .filter-btn').forEach(btn => {
+    const key = btn.dataset.squad;
+    const sq = SQUAD_DEFS.find(s => s.key === key);
+    if (squadSelectAllState) {
+      activeSquads.add(key);
+      btn.style.cssText = `background:${sq.color};color:white;border-color:${sq.color}`;
+      btn.classList.add('active');
+    } else {
+      activeSquads.delete(key);
+      btn.style.cssText = `background:white;color:${sq.color};border-color:${sq.color}`;
+      btn.classList.remove('active');
+    }
+  });
+  document.getElementById('squadSelectAll').textContent = squadSelectAllState ? 'Tout' : 'Aucun';
+  syncPersonsFromSquads();
+  render();
 }
 
 let monthSelectAllState = true;
@@ -373,7 +465,8 @@ function getSquadsForQuarter(q) {
 
 // Génère des lignes de tableau groupées par squad (vue tableau globale = on utilise H2 pour montrer toutes les squads,
 // avec mention de l'évolution pour les membres qui changent)
-function squadRowsHTML(persons, dataFn, colspan) {
+function squadRowsHTML(persons, dataFn, colspan, subtotalFn) {
+  // subtotalFn(members) optionnel : retourne une <tr> de sous-total pour la squad
   const cols = colspan || 5;
   const html = [];
   const done = new Set();
@@ -384,9 +477,10 @@ function squadRowsHTML(persons, dataFn, colspan) {
   if (membersH1.length) {
     html.push(`<tr style="background:linear-gradient(90deg,${sq1.color}18,${sq1.color}06)">
       <td colspan="${cols}" style="padding:6px 11px;font-size:11px;font-weight:700;color:${sq1.color};letter-spacing:0.3px">
-        🏷 ${sq1.label} — Q1 &amp; Q2
+        ${sq1.label} — Q1 &amp; Q2
       </td></tr>`);
     membersH1.forEach(p => { html.push(dataFn(p)); done.add(p); });
+    if (subtotalFn) html.push(subtotalFn(membersH1, sq1.color, sq1.label+' Q1–Q2'));
   }
 
   // Séparateur H2
@@ -401,12 +495,13 @@ function squadRowsHTML(persons, dataFn, colspan) {
     if (!members.length) return;
     html.push(`<tr style="background:linear-gradient(90deg,${sq.color}18,${sq.color}06)">
       <td colspan="${cols}" style="padding:6px 11px;font-size:11px;font-weight:700;color:${sq.color};letter-spacing:0.3px">
-        🏷 ${sq.label} — Q3 &amp; Q4
+        ${sq.label} — Q3 &amp; Q4
       </td></tr>`);
     members.forEach(p => { html.push(dataFn(p)); });
+    if (subtotalFn) html.push(subtotalFn(members, sq.color, sq.label+' Q3–Q4'));
   });
 
-  // Lucas et autres Head of Sales ou non-squad
+  // Head of Sales
   persons.filter(p => HEAD_OF_SALES.includes(p)).forEach(p => {
     if (!done.has(p)) {
       html.push(`<tr style="background:#9B59B618">
@@ -553,7 +648,19 @@ function renderMensuelle(data, persons) {
           <th>Signé Part Q.</th><th>Récurrent Signé</th><th>Récurrent Facturé</th>
           <th>Dernière signature</th><th>Mois</th>
         </tr></thead>
-        <tbody>${squadRowsHTML(sorted, rowFn)}</tbody>
+        <tbody>${squadRowsHTML(sorted, rowFn, 7, (members, color, label) => {
+          const tot = members.reduce((s,p)=>s+(byP[p]?.recSigne||0),0);
+          const totF = members.reduce((s,p)=>s+(byP[p]?.facture||0),0);
+          const nb = members.reduce((s,p)=>s+(byP[p]?.nb||0),0);
+          return `<tr style="background:${color}12;font-weight:700">
+            <td style="color:${color};padding-left:20px">Sous-total</td>
+            <td>${nb}</td>
+            <td>—</td>
+            <td>${fmt(tot)}</td>
+            <td>${fmt(totF)}</td>
+            <td colspan="2"></td>
+          </tr>`;
+        })}</tbody>
       </table>
     </div>`;
 
@@ -690,7 +797,18 @@ function renderTrimestrielle(data, persons) {
             ${qs.map(()=>`<th>Facturé</th><th>Objectif</th><th>Atteinte</th>`).join('')}
           </tr>
         </thead>
-        <tbody>${squadRowsHTML(persons, rowFnTrim, 13)}</tbody>
+        <tbody>${squadRowsHTML(persons, rowFnTrim, 13, (members, color, label) => {
+          return `<tr style="background:${color}12;font-weight:700">
+            <td style="color:${color};padding-left:20px">Sous-total ${label}</td>
+            ${qs.map(q=>{
+              const f = members.reduce((s,p)=>s+(byPQ[p]?.[q]?.facture||0),0);
+              const o = members.reduce((s,p)=>s+(byPQ[p]?.[q]?.obj||0),0);
+              const pct = o>0?(f/o*100).toFixed(1):null;
+              const cls = pct===null?'grey':parseFloat(pct)>=100?'green':parseFloat(pct)>=70?'yellow':'red';
+              return `<td>${fmt(f)}</td><td>${o?fmt(o):'—'}</td><td>${pct!==null?`<span class="badge ${cls}">${pct}%</span>`:'—'}</td>`;
+            }).join('')}
+          </tr>`;
+        })}</tbody>
       </table>
     </div>
 
@@ -808,21 +926,22 @@ function renderTrimestrielle(data, persons) {
 function renderAnnuelle(data, persons) {
   const qs = ['Q1','Q2','Q3','Q4'];
 
-  // Totaux annuels globaux
-  const allActiveSig    = allSig.filter(d=>activePersons.has(d.person));
-  const totalAnnuelFact = allActiveSig.reduce((s,d)=>s+d.recurrent,0);
+  // Totaux annuels globaux — filtrés sur activeMonths ET activePersons
+  const allActiveSig    = allSig.filter(d=>activePersons.has(d.person) && activeMonths.has(d.moisSig));
+  const totalAnnuelFact = allSig.filter(d=>activePersons.has(d.person)&&activeMonths.has(d.moisFact)).reduce((s,d)=>s+d.recurrent,0);
   const totalNbContrats = allActiveSig.length;
   const totalObjAnnuel  = persons.reduce((s,p)=>s+qs.reduce((sq,q)=>sq+(OBJECTIVES[p]?.[q]||0),0),0);
   const pctAnnuel       = totalObjAnnuel > 0 ? (totalAnnuelFact/totalObjAnnuel*100).toFixed(1) : null;
-  // Panier moyen global = récurrent signé / nb contrats (hors 0)
+  // Panier moyen global = Part Qualineo / nb contrats sur la sélection
   const totalPanierSig  = allActiveSig.reduce((s,d)=>s+d.partQ,0);
   const panierGlobal    = totalNbContrats > 0 ? Math.round(totalPanierSig/totalNbContrats) : 0;
 
-  // Par personne
+  // Par personne — filtré sur activeMonths
   const annuelByP = {};
   persons.forEach(p => {
-    const persSig  = allSig.filter(d=>d.person===p);
-    const facture  = persSig.reduce((s,d)=>s+d.recurrent,0);
+    const persSig  = allSig.filter(d=>d.person===p && activeMonths.has(d.moisSig));
+    const persFact = allSig.filter(d=>d.person===p && activeMonths.has(d.moisFact));
+    const facture  = persFact.reduce((s,d)=>s+d.recurrent,0);
     const partQ    = persSig.reduce((s,d)=>s+d.partQ,0);
     const nbCont   = persSig.length;
     const panier   = nbCont > 0 ? Math.round(partQ/nbCont) : 0;
@@ -830,7 +949,7 @@ function renderAnnuelle(data, persons) {
     const pct      = obj > 0 ? (facture/obj*100).toFixed(1) : null;
     const qData    = {};
     qs.forEach(q => {
-      const f = allSig.filter(d=>d.person===p&&QUARTERS[q].includes(d.moisFact)).reduce((s,d)=>s+d.recurrent,0);
+      const f = allSig.filter(d=>d.person===p&&QUARTERS[q].includes(d.moisFact)&&activeMonths.has(d.moisFact)).reduce((s,d)=>s+d.recurrent,0);
       qData[q] = { facture:f, obj: OBJECTIVES[p]?.[q]||0 };
     });
     annuelByP[p] = { facture, partQ, nbCont, panier, obj, pct, qData };
@@ -964,7 +1083,26 @@ function renderAnnuelle(data, persons) {
               <td>${d.pct!==null?`<span class="badge ${cls}">${d.pct}%</span>`:'—'}</td>
               <td><strong>${fmt(d.panier)}</strong> <span style="font-size:10px;color:var(--grey-text)">${d.nbCont} ct.</span></td>
             </tr>`;
-          }, 12)}
+          }, 12, (members, color, label) => {
+            const totF = members.reduce((s,p)=>s+(annuelByP[p]?.facture||0),0);
+            const totO = members.reduce((s,p)=>s+(annuelByP[p]?.obj||0),0);
+            const totPct = totO>0?(totF/totO*100).toFixed(1):null;
+            const cls = totPct===null?'grey':parseFloat(totPct)>=100?'green':parseFloat(totPct)>=70?'yellow':'red';
+            const totNb = members.reduce((s,p)=>s+(annuelByP[p]?.nbCont||0),0);
+            const totPan = totNb>0?Math.round(members.reduce((s,p)=>s+(annuelByP[p]?.partQ||0),0)/totNb):0;
+            return `<tr style="background:${color}12;font-weight:700">
+              <td style="color:${color};padding-left:20px">Sous-total ${label}</td>
+              ${qs.map(q=>{
+                const f=members.reduce((s,p)=>s+(annuelByP[p]?.qData[q]?.facture||0),0);
+                const o=members.reduce((s,p)=>s+(annuelByP[p]?.qData[q]?.obj||0),0);
+                return `<td>${fmt(f)}</td><td>${o?fmt(o):'—'}</td>`;
+              }).join('')}
+              <td>${fmt(totF)}</td>
+              <td>${totO?fmt(totO):'—'}</td>
+              <td>${totPct!==null?`<span class="badge ${cls}">${totPct}%</span>`:'—'}</td>
+              <td>${fmt(totPan)} <span style="font-size:10px;color:var(--grey-text)">${totNb} ct.</span></td>
+            </tr>`;
+          })}
           <tr style="background:#0F206010;font-weight:700">
             <td><strong>TOTAL</strong></td>
             ${qs.map(q=>{
