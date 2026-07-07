@@ -280,12 +280,19 @@ async function loadObjectives() {
       if (!nom) return;
       if (nom.toLowerCase() === 'squad') return;
       if (nom.toLowerCase().includes('total')) return;
-      obj[nom] = {
+      const vals = {
         Q1: pn(r['Q1_Objectif']),
         Q2: pn(r['Q2_Objectif']),
         Q3: pn(r['Q3_Objectif']),
         Q4: pn(r['Q4_Objectif']),
       };
+      // Certaines personnes apparaissent sur plusieurs lignes (changement de squad
+      // en cours d'année, ex: Antoine). On fusionne en gardant la valeur non-nulle
+      // pour chaque trimestre plutôt que d'écraser.
+      if (!obj[nom]) obj[nom] = { Q1:0, Q2:0, Q3:0, Q4:0 };
+      ['Q1','Q2','Q3','Q4'].forEach(q => {
+        if (vals[q] > 0) obj[nom][q] = vals[q];
+      });
     });
     OBJECTIVES = obj;
   } catch(e) {
