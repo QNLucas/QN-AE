@@ -78,6 +78,7 @@
   .squad-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px 16px;border-radius:12px;}
   .squad-caroline{background:linear-gradient(90deg,rgba(244,123,110,0.12),rgba(244,123,110,0.04));border-left:4px solid var(--coral);}
   .squad-antoine{background:linear-gradient(90deg,rgba(43,78,230,0.10),rgba(43,78,230,0.03));border-left:4px solid var(--blue);}
+  .squad-lucas{background:linear-gradient(90deg,rgba(155,89,182,0.12),rgba(155,89,182,0.04));border-left:4px solid #9B59B6;}
   .squad-label{font-size:13px;font-weight:700;color:var(--navy);}
   .squad-sub{font-size:11px;color:var(--grey-text);}
 
@@ -136,12 +137,15 @@
 <script>
 const SHEET_ID = '1NfpK8RpEu-dftc2NildbKzsnDcxMYV9s0HnSHwM5ZVc';
 const OBJECTIVES_SHEET_NAME = 'Feuille 3';
+// Onglet "Signatures" renommé "Signatures - OLD" le 18/08/2026 ; remplacé par "Signatures V2"
+// (nouvelle structure : ARR avant/après, Taux revalo, Canal, Team — plus de "Part Qualineo").
+const SIGNATURES_SHEET_NAME = 'Signatures V2';
 
 // Rempli dynamiquement par loadObjectives() à partir de l'onglet Feuille 3
 let OBJECTIVES = {};
 
 // Squads :
-// Q1 & Q2 : 1 seule squad "Caroline" → Caroline, Antoine, Arthur, Baptiste (Lucas = Head of Sales, hors squad)
+// Q1 & Q2 : 1 seule squad "Caroline" → Caroline, Antoine, Arthur, Baptiste
 // Q3 & Q4 : 2 squads → "Squad Caroline" (Caroline, Arthur, Baptiste) + "Squad Antoine" (Antoine)
 const SQUADS_BY_HALF = {
   H1: [
@@ -152,13 +156,46 @@ const SQUADS_BY_HALF = {
     { key:'Antoine',  label:'Squad Antoine',  members:['Antoine', 'Alix'],                 color:'#2B4EE6' }
   ]
 };
-// HEAD_OF_SALES : jamais dans une squad
-const HEAD_OF_SALES = ['Lucas'];
+// Squads constantes sur toute l'année (pas de réorganisation Q1-Q2 / Q3-Q4),
+// telles qu'elles apparaissent dans l'onglet "Feuille 3" (colonne Squad, "[merged] Lucas").
+const CONSTANT_SQUADS = [
+  { key:'Lucas', label:'Squad Lucas', members:['Lucas','Emiliano'], color:'#9B59B6' }
+];
+// HEAD_OF_SALES : commerciaux hors squad (aucun actuellement — Lucas fait partie de Squad Lucas)
+const HEAD_OF_SALES = [];
 
 const MONTHS_ORDER = [
   'janv. 2026','févr. 2026','mars 2026','avr. 2026','mai 2026','juin 2026',
   'juil. 2026','août 2026','sept. 2026','oct. 2026','nov. 2026','déc. 2026'
 ];
+
+// L'onglet "Signatures V2" mélange plusieurs formats de date selon les lignes
+// (ex: "janv.-2026", "mars-2026", "janvier 2026"). On normalise tout vers le
+// format canonique utilisé par MONTHS_ORDER ("janv. 2026") avant tout matching.
+const MONTH_ABBR_MAP = {
+  'janvier':'janv.','janv':'janv.','jan':'janv.',
+  'fevrier':'févr.','février':'févr.','fevr':'févr.','févr':'févr.',
+  'mars':'mars',
+  'avril':'avr.','avr':'avr.',
+  'mai':'mai',
+  'juin':'juin',
+  'juillet':'juil.','juil':'juil.',
+  'aout':'août','août':'août',
+  'septembre':'sept.','sept':'sept.',
+  'octobre':'oct.','oct':'oct.',
+  'novembre':'nov.','nov':'nov.',
+  'decembre':'déc.','décembre':'déc.','dec':'déc.','déc':'déc.'
+};
+function normalizeMonthLabel(raw) {
+  if (!raw) return '';
+  const s = raw.trim();
+  const m = s.match(/^([a-zà-ÿ]+)\.?[\s\-]+(\d{4})$/i);
+  if (!m) return s; // format non reconnu : on laisse tel quel (sera filtré plus loin)
+  const monthKey = m[1].toLowerCase().replace(/\.$/, '');
+  const year = m[2];
+  const abbr = MONTH_ABBR_MAP[monthKey] || monthKey;
+  return `${abbr} ${year}`;
+}
 const QUARTERS = {
   Q1:['janv. 2026','févr. 2026','mars 2026'],
   Q2:['avr. 2026','mai 2026','juin 2026'],
@@ -167,7 +204,8 @@ const QUARTERS = {
 };
 const COLORS = {
   Antoine:'#2B4EE6', Arthur:'#5BC98A', Caroline:'#F47B6E',
-  Baptiste:'#F5A623', Lucas:'#9B59B6', Alix:'#E91E8C', Antony:'#1ABC9C', Frederic:'#E67E22'
+  Baptiste:'#F5A623', Lucas:'#9B59B6', Alix:'#E91E8C', Antony:'#1ABC9C', Frederic:'#E67E22',
+  Emiliano:'#16A085'
 };
 const Q_COLORS = ['#7C3AED','#0891B2','#059669','#DC2626']; // distinct des couleurs commerciaux
 
@@ -177,7 +215,7 @@ let activeMonths = new Set();
 let activePersons = new Set();
 let allMonthsInData = [];
 let allPersonsInData = [];
-let activeSquads = new Set(['Caroline','Antoine','HOS']);
+let activeSquads = new Set(['Caroline','Antoine','Lucas']);
 let charts = {};
 
 // Mois courant pour séparation passé/futur
@@ -304,7 +342,7 @@ async function loadData() {
   document.getElementById('lastUpdate').textContent = '↻ Chargement…';
   try {
     const [res] = await Promise.all([
-      fetch(`https://opensheet.elk.sh/${SHEET_ID}/Signatures`),
+      fetch(`https://opensheet.elk.sh/${SHEET_ID}/${encodeURIComponent(SIGNATURES_SHEET_NAME)}`),
       loadObjectives()
     ]);
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -314,10 +352,12 @@ async function loadData() {
       .map(r => ({
         devis:    (r['N° Devis'] || '').trim(),
         person:   (r['Signé par'] || '').trim(),
-        moisSig:  (r['Mois signature'] || '').trim(),
-        moisFact: (r['Mois facturation'] || '').trim(),
-        montant:  pn(r['Montant (€ HT)']),
-        partQ:    pn(r['Part Qualineo']),
+        moisSig:  normalizeMonthLabel(r['Mois signature']),
+        moisFact: normalizeMonthLabel(r['Mois démarrage estimé']),
+        montant:  pn(r['Montant HT']),
+        // "Part Qualineo" n'existe plus dans Signatures V2 (remplacé par ARR avant/après) ;
+        // on utilise Montant HT comme montant signé, sur demande de Lucas.
+        partQ:    pn(r['Montant HT']),
         recurrent:pn(r['Dont récurrent']),
         dateStr:  (r['Date signature'] || '').trim(),
       }))
@@ -325,7 +365,13 @@ async function loadData() {
 
     // Toujours tous les mois (y compris futurs)
     allMonthsInData  = [...MONTHS_ORDER];
-    allPersonsInData = [...new Set(allSig.map(d => d.person))].sort();
+    // Personnes ayant signé + membres de squad définis (ex: Emiliano, Bizdev sans signature propre
+    // mais suivi via ses objectifs dans Feuille 3 / Squad Lucas)
+    const signers = new Set(allSig.map(d => d.person));
+    const squadMembers = new Set();
+    [...SQUADS_BY_HALF.H1, ...SQUADS_BY_HALF.H2, ...CONSTANT_SQUADS].forEach(sq => sq.members.forEach(m => squadMembers.add(m)));
+    HEAD_OF_SALES.forEach(m => squadMembers.add(m));
+    allPersonsInData = [...new Set([...signers, ...squadMembers])].sort();
 
     activeMonths  = new Set(allMonthsInData);
     activePersons = new Set(allPersonsInData);
@@ -350,11 +396,13 @@ async function loadData() {
 const SQUAD_DEFS = [
   { key:'Caroline', label:'Squad Caroline', color:'#F47B6E' },
   { key:'Antoine',  label:'Squad Antoine',  color:'#2B4EE6' },
-  { key:'HOS',      label:'Head of Sales',  color:'#9B59B6' },
+  { key:'Lucas',    label:'Squad Lucas',    color:'#9B59B6' },
 ];
 
 function membersOfSquad(key) {
-  if (key === 'HOS') return HEAD_OF_SALES;
+  // Squads constantes (ex: Squad Lucas)
+  const constSq = CONSTANT_SQUADS.find(sq => sq.key === key);
+  if (constSq) return constSq.members;
   // union H1+H2 pour avoir tous les membres possibles
   const all = new Set();
   [...SQUADS_BY_HALF.H1, ...SQUADS_BY_HALF.H2].forEach(sq => {
@@ -584,7 +632,19 @@ function squadRowsHTML(persons, dataFn, colspan, subtotalFn) {
     if (subtotalFn) html.push(subtotalFn(members, sq.color, sq.label+' Q3–Q4'));
   });
 
-  // Head of Sales
+  // Squads constantes (ex: Squad Lucas — pas de réorganisation Q1-Q2/Q3-Q4)
+  CONSTANT_SQUADS.forEach(sq => {
+    const members = sq.members.filter(p => persons.includes(p));
+    if (!members.length) return;
+    html.push(`<tr style="background:linear-gradient(90deg,${sq.color}18,${sq.color}06)">
+      <td colspan="${cols}" style="padding:6px 11px;font-size:11px;font-weight:700;color:${sq.color};letter-spacing:0.3px">
+        ${sq.label}
+      </td></tr>`);
+    members.forEach(p => { html.push(dataFn(p)); done.add(p); });
+    if (subtotalFn) html.push(subtotalFn(members, sq.color, sq.label));
+  });
+
+  // Head of Sales (hors squad, s'il y en a)
   persons.filter(p => HEAD_OF_SALES.includes(p)).forEach(p => {
     if (!done.has(p)) {
       html.push(`<tr style="background:#9B59B618">
@@ -636,7 +696,7 @@ function renderMensuelle(data, persons) {
     <div class="section-title">Vue d'ensemble <span class="pill">Mensuel</span></div>
     <div class="kpi-grid">
       <div class="kpi-card blue">
-        <div class="kpi-label">Signé Part Qualineo</div>
+        <div class="kpi-label">Signé Montant HT</div>
         <div class="kpi-value">${fmt(totalSigne)}</div>
         <div class="kpi-sub">${data.length} contrats</div>
       </div>
@@ -705,6 +765,24 @@ function renderMensuelle(data, persons) {
           <div class="chart-wrap"><canvas id="cSquad_${p}"></canvas></div>
         </div>`).join('')}
       </div>
+    </div>
+
+    <!-- Squad Lucas (toute l'année — Lucas + Emiliano, cf. Feuille 3) -->
+    <div class="squad-section">
+      <div class="squad-header squad-lucas">
+        <span style="font-size:18px">🏷</span>
+        <div>
+          <div class="squad-label" style="color:#9B59B6">Squad Lucas</div>
+          <div class="squad-sub">Lucas (CSO) · Emiliano (Bizdev)</div>
+        </div>
+      </div>
+      <div class="charts-grid">
+        ${['Lucas','Emiliano'].filter(p=>persons.includes(p)).map(p=>`
+        <div class="chart-card">
+          <h3 style="color:${COLORS[p]}">${p} — Récurrent signé / mois</h3>
+          <div class="chart-wrap"><canvas id="cSquad_${p}"></canvas></div>
+        </div>`).join('')}
+      </div>
     </div>`;
 
   setTimeout(() => {
@@ -750,7 +828,7 @@ function renderMensuelle(data, persons) {
   });
 
   // Mini-graphes par personne
-  ['Caroline','Arthur','Baptiste','Antoine','Alix'].forEach(p => {
+  ['Caroline','Arthur','Baptiste','Antoine','Alix','Lucas','Emiliano'].forEach(p => {
     const el = document.getElementById('cSquad_'+p);
     if (!el || !persons.includes(p)) return;
     charts['sq_'+p] = new Chart(el.getContext('2d'), {
@@ -901,6 +979,16 @@ function renderTrimestrielle(data, persons) {
         </div>
         ${pctGridTable(['Antoine','Alix'].filter(p=>persons.includes(p)), (p,q)=>byPQ[p][q], qs)}
       </div>
+      <div class="chart-card">
+        <div class="squad-header squad-lucas" style="margin-bottom:10px">
+          <span style="font-size:16px">🏷</span>
+          <div>
+            <div class="squad-label" style="color:#9B59B6;font-size:12px">Squad Lucas</div>
+            <div class="squad-sub">Lucas (CSO) · Emiliano (Bizdev)</div>
+          </div>
+        </div>
+        ${pctGridTable(['Lucas','Emiliano'].filter(p=>persons.includes(p)), (p,q)=>byPQ[p][q], qs)}
+      </div>
     </div>`;
 }
 
@@ -916,7 +1004,7 @@ function renderAnnuelle(data, persons) {
   const totalNbContrats = allActiveSig.length;
   const totalObjAnnuel  = persons.reduce((s,p)=>s+qs.reduce((sq,q)=>sq+(OBJECTIVES[p]?.[q]||0),0),0);
   const pctAnnuel       = totalObjAnnuel > 0 ? (totalAnnuelFact/totalObjAnnuel*100) : null;
-  // Panier moyen global = Part Qualineo / nb contrats sur la sélection
+  // Panier moyen global = Montant HT / nb contrats sur la sélection
   const totalPanierSig  = allActiveSig.reduce((s,d)=>s+d.partQ,0);
   const panierGlobal    = totalNbContrats > 0 ? Math.round(totalPanierSig/totalNbContrats) : 0;
 
@@ -951,6 +1039,7 @@ function renderAnnuelle(data, persons) {
   }
   const panierCaroline = squadPanier(['Caroline','Arthur','Baptiste']);
   const panierAntoine  = squadPanier(['Antoine']);
+  const panierLucas    = squadPanier(['Lucas','Emiliano']);
 
   destroyCharts();
   document.getElementById('mainContent').innerHTML = `
@@ -978,7 +1067,7 @@ function renderAnnuelle(data, persons) {
       </div>
     </div>
 
-    <div class="section-title">Panier moyen <span class="pill">Part Qualineo / contrat</span></div>
+    <div class="section-title">Panier moyen <span class="pill">Montant HT / contrat</span></div>
     <div class="kpi-grid">
       <div class="kpi-card blue">
         <div class="kpi-label">Panier moyen global</div>
@@ -994,6 +1083,11 @@ function renderAnnuelle(data, persons) {
         <div class="kpi-label">Squad Antoine</div>
         <div class="kpi-value">${fmt(panierAntoine)}</div>
         <div class="kpi-sub">Antoine (Q3–Q4)</div>
+      </div>
+      <div class="kpi-card" style="background:linear-gradient(135deg,#9B59B6,#6f3d82);color:white">
+        <div class="kpi-label">Squad Lucas</div>
+        <div class="kpi-value">${fmt(panierLucas)}</div>
+        <div class="kpi-sub">Lucas · Emiliano</div>
       </div>
       ${sorted.map(p=>`
       <div class="kpi-card">
@@ -1025,6 +1119,14 @@ function renderAnnuelle(data, persons) {
           <div class="squad-sub">Q1–Q2 : dans Squad Caroline &nbsp;|&nbsp; Q3–Q4 : lead indépendant</div></div>
         </div>
         ${pctGridTable(['Antoine','Alix'].filter(p=>persons.includes(p)), (p,q)=>annuelByP[p].qData[q], qs)}
+      </div>
+      <div class="chart-card">
+        <div class="squad-header squad-lucas" style="margin-bottom:10px">
+          <span style="font-size:16px">🏷</span>
+          <div><div class="squad-label" style="color:#9B59B6;font-size:12px">Squad Lucas</div>
+          <div class="squad-sub">Lucas (CSO) · Emiliano (Bizdev)</div></div>
+        </div>
+        ${pctGridTable(['Lucas','Emiliano'].filter(p=>persons.includes(p)), (p,q)=>annuelByP[p].qData[q], qs)}
       </div>
     </div>
 
@@ -1103,7 +1205,7 @@ function renderAnnuelle(data, persons) {
     data:{
       labels: sorted,
       datasets:[{
-        label:'Panier moyen (Part Qualineo / contrat)',
+        label:'Panier moyen (Montant HT / contrat)',
         data: sorted.map(p=>annuelByP[p].panier),
         backgroundColor: sorted.map(p=>(COLORS[p]||'#ccc')+'CC'),
         borderRadius:6,
